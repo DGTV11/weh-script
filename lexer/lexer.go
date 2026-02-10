@@ -2,6 +2,10 @@ package lexer
 
 import (
 	"fmt"
+	"strconv"
+	"unicode"
+
+	"github.com/DGTV11/weh-script/errors"
 )
 
 type TokenType int
@@ -17,9 +21,27 @@ const (
 	TokenTypeRparen
 )
 
+var TokenTypeName = map[TokenType]string{
+	TokenTypeInt:    "TokenTypeInt",
+	TokenTypeFloat:  "TokenTypeFloat",
+	TokenTypePlus:   "TokenTypePlus",
+	TokenTypeMinus:  "TokenTypeMinus",
+	TokenTypeMul:    "TokenTypeMul",
+	TokenTypeDiv:    "TokenTypeDiv",
+	TokenTypeLparen: "TokenTypeLparen",
+	TokenTypeRparen: "TokenTypeRparen",
+}
+
 type Token struct {
-	_type TokenType
-	value any //TODO
+	Type  TokenType
+	Value any
+}
+
+func (t Token) String() string {
+	if t.Value == nil {
+		return fmt.Sprintf("Token{Type=%s}", TokenTypeName[t.Type])
+	}
+	return fmt.Sprintf("Token{Type=%s, Value=%v}", TokenTypeName[t.Type], t.Value)
 }
 
 type Lexer struct {
@@ -37,15 +59,95 @@ func (l *Lexer) Advance() {
 	l.CurrentChar = &[]rune(l.Text)[l.Pos]
 }
 
-func (l *Lexer) Tokenise() *Token {
+func (l *Lexer) MakeNumberToken() (*Token, error) {
+	numStr := ""
+	dotCount := 0
+
+	for l.CurrentChar != nil {
+		char := *l.CurrentChar
+
+		if unicode.IsDigit(char) {
+			numStr += string(char)
+
+			l.Advance()
+
+			continue
+		}
+
+		if char == '.' {
+			if dotCount == 1 {
+				break
+			}
+			dotCount += 1
+			numStr += "."
+
+			l.Advance()
+
+			continue
+		}
+
+		break
+	}
+
+	var (
+		value any
+		err   error
+		_type TokenType
+	)
+
+	if dotCount == 0 {
+		value, err = strconv.ParseInt(numStr, 10, 64)
+		_type = TokenTypeInt
+	} else {
+		value, err = strconv.ParseFloat(numStr, 64)
+		_type = TokenTypeFloat
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &Token{Type: _type, Value: value}, nil
+}
+
+func (l *Lexer) Tokenise() ([]Token, *errors.Error) {
 	var tokens []Token
 
 	for l.CurrentChar != nil {
-		if *l.CurrentChar == ' ' || *l.CurrentChar == '\t' {
+		switch char := *l.CurrentChar; char {
+		case ' ':
+		case '\t':
+		case '+':
+			tokens = append(tokens, Token{Type: TokenTypePlus, Value: nil})
+		case '-':
+			tokens = append(tokens, Token{Type: TokenTypeMinus, Value: nil})
+		case '*':
+			tokens = append(tokens, Token{Type: TokenTypeMul, Value: nil})
+		case '/':
+			tokens = append(tokens, Token{Type: TokenTypeDiv, Value: nil})
+		case '(':
+			tokens = append(tokens, Token{Type: TokenTypeLparen, Value: nil})
+		case ')':
+			tokens = append(tokens, Token{Type: TokenTypeRparen, Value: nil})
+		default:
+			if unicode.IsDigit(char) {
+				tokp, err := l.MakeNumberToken()
+				if err != nil {
+					return []Token{}, errors.NewInvalidNumberError(err.Error())
+				}
+				tokens = append(tokens, *tokp)
+
+				continue
+			}
+
 			l.Advance()
+			return []Token{}, errors.NewIllegalCharError("'" + string(char) + "'")
 		}
+
+		l.Advance()
 	}
-	tokens = append(tokens, nil) //TODO
+
+	return tokens, nil
 }
 
 func NewLexer(input string) *Lexer {
