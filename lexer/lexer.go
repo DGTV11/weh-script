@@ -1,49 +1,13 @@
 package lexer
 
 import (
-	"fmt"
 	"strconv"
 	"unicode"
 
 	"github.com/DGTV11/weh-script/errors"
 	"github.com/DGTV11/weh-script/position"
+	"github.com/DGTV11/weh-script/tokens"
 )
-
-type TokenType int
-
-const (
-	TokenTypeInt TokenType = iota
-	TokenTypeFloat
-	TokenTypePlus
-	TokenTypeMinus
-	TokenTypeMul
-	TokenTypeDiv
-	TokenTypeLparen
-	TokenTypeRparen
-)
-
-var TokenTypeName = map[TokenType]string{
-	TokenTypeInt:    "TokenTypeInt",
-	TokenTypeFloat:  "TokenTypeFloat",
-	TokenTypePlus:   "TokenTypePlus",
-	TokenTypeMinus:  "TokenTypeMinus",
-	TokenTypeMul:    "TokenTypeMul",
-	TokenTypeDiv:    "TokenTypeDiv",
-	TokenTypeLparen: "TokenTypeLparen",
-	TokenTypeRparen: "TokenTypeRparen",
-}
-
-type Token struct {
-	Type  TokenType
-	Value any
-}
-
-func (t Token) String() string {
-	if t.Value == nil {
-		return fmt.Sprintf("Token{Type=%s}", TokenTypeName[t.Type])
-	}
-	return fmt.Sprintf("Token{Type=%s, Value=%v}", TokenTypeName[t.Type], t.Value)
-}
 
 type Lexer struct {
 	FileName    string
@@ -72,7 +36,7 @@ func (l *Lexer) Advance() {
 	l.CurrentChar = &[]rune(l.Text)[l.Position.Index]
 }
 
-func (l *Lexer) MakeNumberToken() (*Token, error) {
+func (l *Lexer) MakeNumberToken() (*tokens.Token, error) {
 	numStr := ""
 	dotCount := 0
 
@@ -105,63 +69,63 @@ func (l *Lexer) MakeNumberToken() (*Token, error) {
 	var (
 		value any
 		err   error
-		_type TokenType
+		_type tokens.TokenType
 	)
 
 	if dotCount == 0 {
 		value, err = strconv.ParseInt(numStr, 10, 64)
-		_type = TokenTypeInt
+		_type = tokens.TokenTypeInt
 	} else {
 		value, err = strconv.ParseFloat(numStr, 64)
-		_type = TokenTypeFloat
+		_type = tokens.TokenTypeFloat
 	}
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &Token{Type: _type, Value: value}, nil
+	return &tokens.Token{Type: _type, Value: value}, nil
 }
 
-func (l *Lexer) Tokenise() ([]Token, *errors.Error) {
-	var tokens []Token
+func (l *Lexer) Tokenise() ([]tokens.Token, *errors.Error) {
+	var tokenList []tokens.Token
 
 	for l.CurrentChar != nil {
 		switch char := *l.CurrentChar; char {
 		case ' ':
 		case '\t':
 		case '+':
-			tokens = append(tokens, Token{Type: TokenTypePlus, Value: nil})
+			tokenList = append(tokenList, tokens.Token{Type: tokens.TokenTypePlus, Value: nil})
 		case '-':
-			tokens = append(tokens, Token{Type: TokenTypeMinus, Value: nil})
+			tokenList = append(tokenList, tokens.Token{Type: tokens.TokenTypeMinus, Value: nil})
 		case '*':
-			tokens = append(tokens, Token{Type: TokenTypeMul, Value: nil})
+			tokenList = append(tokenList, tokens.Token{Type: tokens.TokenTypeMul, Value: nil})
 		case '/':
-			tokens = append(tokens, Token{Type: TokenTypeDiv, Value: nil})
+			tokenList = append(tokenList, tokens.Token{Type: tokens.TokenTypeDiv, Value: nil})
 		case '(':
-			tokens = append(tokens, Token{Type: TokenTypeLparen, Value: nil})
+			tokenList = append(tokenList, tokens.Token{Type: tokens.TokenTypeLparen, Value: nil})
 		case ')':
-			tokens = append(tokens, Token{Type: TokenTypeRparen, Value: nil})
+			tokenList = append(tokenList, tokens.Token{Type: tokens.TokenTypeRparen, Value: nil})
 		default:
 			if unicode.IsDigit(char) {
 				tokp, err := l.MakeNumberToken()
 				if err != nil {
 					positionStart := l.Position.Copy()
 					l.Advance()
-					return []Token{}, errors.NewInvalidNumberError(positionStart, l.Position, err.Error())
+					return []tokens.Token{}, errors.NewInvalidNumberError(positionStart, l.Position, err.Error())
 				}
-				tokens = append(tokens, *tokp)
+				tokenList = append(tokenList, *tokp)
 
 				continue
 			}
 
 			positionStart := l.Position.Copy()
 			l.Advance()
-			return []Token{}, errors.NewIllegalCharError(positionStart, l.Position, "'"+string(char)+"'")
+			return []tokens.Token{}, errors.NewIllegalCharError(positionStart, l.Position, "'"+string(char)+"'")
 		}
 
 		l.Advance()
 	}
 
-	return tokens, nil
+	return tokenList, nil
 }

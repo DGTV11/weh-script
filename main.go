@@ -5,9 +5,10 @@ import (
 
 	"github.com/DGTV11/weh-script/errors"
 	"github.com/DGTV11/weh-script/lexer"
+	"github.com/DGTV11/weh-script/tokens"
 )
 
-func run(fileName string, text string) ([]lexer.Token, *errors.Error) {
+func run(fileName string, text string) ([]tokens.Token, *errors.Error) {
 	lexer := lexer.NewLexer(fileName, text)
 	tokens, err := lexer.Tokenise()
 	return tokens, err
