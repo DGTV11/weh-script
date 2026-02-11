@@ -1,6 +1,9 @@
 package tokens
 
-import "fmt"
+import (
+	"fmt"
+	// "github.com/DGTV11/weh-script/position"
+)
 
 type TokenType int
 
@@ -29,7 +32,11 @@ var TokenTypeName = map[TokenType]string{
 type Token struct {
 	Type  TokenType
 	Value any
+	// PosStart position.Position
+	// PosEnd   position.Position
 }
+
+//TODO: implement NewToken which determines wtf to put in Position (also update lexer accordingly)
 
 func (t Token) String() string {
 	if t.Value == nil {

@@ -14,7 +14,7 @@ type Error struct {
 }
 
 func (e Error) String() string {
-	return fmt.Sprintf("%s: %s\nFile %s, line %d", e.Name, e.Details, e.PositionStart.FileName, e.PositionStart.Line+1)
+	return fmt.Sprintf("%s: %s\nFile %s, line %d", e.Name, e.Details, e.PositionStart.FileName, e.PositionStart.Line+1) //TODO: make string with arrows thingy
 }
 
 func NewIllegalCharError(positionStart position.Position, positionEnd position.Position, details string) *Error {
@@ -23,4 +23,8 @@ func NewIllegalCharError(positionStart position.Position, positionEnd position.P
 
 func NewInvalidNumberError(positionStart position.Position, positionEnd position.Position, details string) *Error {
 	return &Error{PositionStart: positionStart, PositionEnd: positionEnd, Name: "Invalid Number", Details: details}
+}
+
+func NewInvalidSyntaxError(positionStart position.Position, positionEnd position.Position, details string) *Error {
+	return &Error{PositionStart: positionStart, PositionEnd: positionEnd, Name: "Invalid Syntax", Details: details}
 }
