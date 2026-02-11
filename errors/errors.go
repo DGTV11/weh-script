@@ -27,4 +27,4 @@ func NewInvalidNumberError(positionStart position.Position, positionEnd position
 
 func NewInvalidSyntaxError(positionStart position.Position, positionEnd position.Position, details string) *Error {
 	return &Error{PositionStart: positionStart, PositionEnd: positionEnd, Name: "Invalid Syntax", Details: details}
-}
+} //TODO: add this to parser
