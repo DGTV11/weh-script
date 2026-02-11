@@ -6,6 +6,7 @@ import (
 	"unicode"
 
 	"github.com/DGTV11/weh-script/errors"
+	"github.com/DGTV11/weh-script/position"
 )
 
 type TokenType int
@@ -45,18 +46,30 @@ func (t Token) String() string {
 }
 
 type Lexer struct {
+	FileName    string
 	Text        string
-	Pos         int
+	Position    position.Position
 	CurrentChar *rune
 }
 
+func NewLexer(fileName string, text string) *Lexer {
+	newLexer := Lexer{
+		FileName:    fileName,
+		Text:        text,
+		Position:    position.NewPosition(-1, 0, -1, fileName, text),
+		CurrentChar: nil,
+	}
+	newLexer.Advance()
+	return &newLexer
+}
+
 func (l *Lexer) Advance() {
-	l.Pos += 1
-	if l.Pos >= len(l.Text) {
+	l.Position.Advance(l.CurrentChar)
+	if l.Position.Index >= len(l.Text) {
 		l.CurrentChar = nil
 		return
 	}
-	l.CurrentChar = &[]rune(l.Text)[l.Pos]
+	l.CurrentChar = &[]rune(l.Text)[l.Position.Index]
 }
 
 func (l *Lexer) MakeNumberToken() (*Token, error) {
@@ -133,25 +146,22 @@ func (l *Lexer) Tokenise() ([]Token, *errors.Error) {
 			if unicode.IsDigit(char) {
 				tokp, err := l.MakeNumberToken()
 				if err != nil {
-					return []Token{}, errors.NewInvalidNumberError(err.Error())
+					positionStart := l.Position.Copy()
+					l.Advance()
+					return []Token{}, errors.NewInvalidNumberError(positionStart, l.Position, err.Error())
 				}
 				tokens = append(tokens, *tokp)
 
 				continue
 			}
 
+			positionStart := l.Position.Copy()
 			l.Advance()
-			return []Token{}, errors.NewIllegalCharError("'" + string(char) + "'")
+			return []Token{}, errors.NewIllegalCharError(positionStart, l.Position, "'"+string(char)+"'")
 		}
 
 		l.Advance()
 	}
 
 	return tokens, nil
-}
-
-func NewLexer(input string) *Lexer {
-	newLexer := Lexer{Text: input, Pos: -1, CurrentChar: nil}
-	newLexer.Advance()
-	return &newLexer
 }

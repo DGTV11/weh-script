@@ -7,8 +7,8 @@ import (
 	"github.com/DGTV11/weh-script/lexer"
 )
 
-func run(text string) ([]lexer.Token, *errors.Error) {
-	lexer := lexer.NewLexer(text)
+func run(fileName string, text string) ([]lexer.Token, *errors.Error) {
+	lexer := lexer.NewLexer(fileName, text)
 	tokens, err := lexer.Tokenise()
 	return tokens, err
 }
@@ -22,7 +22,7 @@ func main() {
 		fmt.Print("wehscript > ")
 		fmt.Scanln(&text)
 
-		res, err := run(text)
+		res, err := run("<stdin>", text)
 
 		if err != nil {
 			fmt.Println(err)
