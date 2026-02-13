@@ -2,6 +2,7 @@ package tokens
 
 import (
 	"fmt"
+
 	"github.com/DGTV11/weh-script/position"
 )
 
@@ -16,6 +17,7 @@ const (
 	TokenTypeDiv
 	TokenTypeLparen
 	TokenTypeRparen
+	TokenTypeEOF
 )
 
 var TokenTypeName = map[TokenType]string{
@@ -27,23 +29,36 @@ var TokenTypeName = map[TokenType]string{
 	TokenTypeDiv:    "TokenTypeDiv",
 	TokenTypeLparen: "TokenTypeLparen",
 	TokenTypeRparen: "TokenTypeRparen",
+	TokenTypeEOF:    "TokenTypeEOF",
 }
 
 type Token struct {
 	Type     TokenType
 	Value    any
-	PosStart position.Position
-	PosEnd   position.Position
+	PosStart *position.Position
+	PosEnd   *position.Position
 }
 
-func NewToken(_type TokenType, value any, posStart *position.Position, posEnd *position.Position) Token {
-	//TODO: implement NewToken which determines wtf to put in Position (also update lexer accordingly)
-	return Token{Type: _type, Value: value, PosStart: todo, PosEnd: todo} //TODO
+func NewToken(_type TokenType, value any, posStartIn *position.Position, posEndIn *position.Position) Token {
+	var posStart *position.Position
+	var posEnd *position.Position
+
+	if posStartIn != nil {
+		posStart = posStartIn.Copy()
+		posEnd = posStartIn.Copy()
+		posEnd.Advance(nil)
+	}
+
+	if posEndIn != nil {
+		posEnd = posEndIn.Copy()
+	}
+
+	return Token{Type: _type, Value: value, PosStart: posStart, PosEnd: posEnd}
 }
 
 func (t Token) String() string {
 	if t.Value == nil {
 		return fmt.Sprintf("Token{Type=%s}", TokenTypeName[t.Type])
 	}
-	return fmt.Sprintf("Token{Type=%s, Value=%v}", TokenTypeName[t.Type], t.Value) //TODO: add pos
+	return fmt.Sprintf("Token{Type=%s, Value=%v}", TokenTypeName[t.Type], t.Value)
 }

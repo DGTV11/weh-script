@@ -7,24 +7,24 @@ import (
 )
 
 type Error struct {
-	PositionStart position.Position
-	PositionEnd   position.Position
+	PositionStart *position.Position
+	PositionEnd   *position.Position
 	Name          string
 	Details       string
 }
 
 func (e Error) String() string {
-	return fmt.Sprintf("%s: %s\nFile %s, line %d", e.Name, e.Details, e.PositionStart.FileName, e.PositionStart.Line+1) //TODO: make string with arrows thingy
+	return fmt.Sprintf("%s: %s\nFile %s, line %d", e.Name, e.Details, e.PositionStart.FileName, e.PositionStart.Line+1) //!TODO: make string with arrows thingy
 }
 
-func NewIllegalCharError(positionStart position.Position, positionEnd position.Position, details string) *Error {
+func NewIllegalCharError(positionStart *position.Position, positionEnd *position.Position, details string) *Error {
 	return &Error{PositionStart: positionStart, PositionEnd: positionEnd, Name: "Illegal Character", Details: details}
 }
 
-func NewInvalidNumberError(positionStart position.Position, positionEnd position.Position, details string) *Error {
+func NewInvalidNumberError(positionStart *position.Position, positionEnd *position.Position, details string) *Error {
 	return &Error{PositionStart: positionStart, PositionEnd: positionEnd, Name: "Invalid Number", Details: details}
 }
 
-func NewInvalidSyntaxError(positionStart position.Position, positionEnd position.Position, details string) *Error {
+func NewInvalidSyntaxError(positionStart *position.Position, positionEnd *position.Position, details string) *Error {
 	return &Error{PositionStart: positionStart, PositionEnd: positionEnd, Name: "Invalid Syntax", Details: details}
-} //TODO: add this to parser
+}

@@ -22,7 +22,7 @@ func run(fileName string, text string) (nodes.Node, *errors.Error) {
 	_parser := parser.NewParser(tokens)
 	ast := _parser.Parse()
 
-	return ast, err
+	return ast.Node, ast.Err
 }
 
 var text string

@@ -3,9 +3,36 @@ package parser
 import (
 	"slices"
 
+	"github.com/DGTV11/weh-script/errors"
 	"github.com/DGTV11/weh-script/nodes"
 	"github.com/DGTV11/weh-script/tokens"
 )
+
+type ParseResult struct {
+	Err  *errors.Error
+	Node nodes.Node
+}
+
+func NewParseResult() *ParseResult {
+	return &ParseResult{Err: nil, Node: nil}
+}
+
+func (pr *ParseResult) Register(res *ParseResult) nodes.Node {
+	if res.Err != nil {
+		pr.Err = res.Err
+	}
+	return res.Node
+}
+
+func (pr *ParseResult) Success(node nodes.Node) *ParseResult {
+	pr.Node = node
+	return pr
+}
+
+func (pr *ParseResult) Failure(err *errors.Error) *ParseResult {
+	pr.Err = err
+	return pr
+}
 
 type Parser struct {
 	TokenList    []tokens.Token
@@ -23,54 +50,73 @@ func NewParser(tokenList []tokens.Token) *Parser {
 	return &newParser
 }
 
-func (p *Parser) Advance() {
+func (p *Parser) Advance() *tokens.Token {
 	p.TokenIndex += 1
 
 	if p.TokenIndex < len(p.TokenList) {
 		p.CurrentToken = &p.TokenList[p.TokenIndex]
 	}
+	return p.CurrentToken
 }
 
-func (p *Parser) Parse() nodes.Node {
+func (p *Parser) Parse() *ParseResult {
 	res := p.Expr()
+
+	if res.Err == nil && p.CurrentToken.Type != tokens.TokenTypeEOF {
+		return res.Failure(
+			errors.NewInvalidSyntaxError(
+				p.CurrentToken.PosStart, p.CurrentToken.PosEnd,
+				"Expected '+', '-', '*', or '/'",
+			),
+		)
+	}
 	return res
 }
 
-func (p *Parser) Factor() nodes.Node {
+func (p *Parser) Factor() *ParseResult {
+	res := NewParseResult()
+
 	tok := *p.CurrentToken
 
 	if tok.Type == tokens.TokenTypeInt || tok.Type == tokens.TokenTypeFloat {
+		//TODO: res.Register(p.Advance())
 		p.Advance()
-		return nodes.NumberNode{Tok: tok}
+		return res.Success(nodes.NumberNode{Tok: tok})
 	}
 
-	return nil //TODO: error handling
+	return res.Failure(
+		errors.NewInvalidSyntaxError(
+			tok.PosStart, tok.PosEnd,
+			"Expected int or float",
+		),
+	)
 }
 
-func (p *Parser) Term() nodes.Node {
+func (p *Parser) Term() *ParseResult {
 	return p.BinOp(p.Factor, []tokens.TokenType{tokens.TokenTypeMul, tokens.TokenTypeDiv})
 }
 
-func (p *Parser) Expr() nodes.Node {
+func (p *Parser) Expr() *ParseResult {
 	return p.BinOp(p.Term, []tokens.TokenType{tokens.TokenTypePlus, tokens.TokenTypeMinus})
 }
 
-func (p *Parser) BinOp(function func() nodes.Node, ops []tokens.TokenType) nodes.Node {
+func (p *Parser) BinOp(function func() *ParseResult, ops []tokens.TokenType) *ParseResult {
+	res := NewParseResult()
 	var left nodes.Node = nil
 
-	initialLeft := function()
-	if initialLeft == nil {
-		//TODO: error handling
+	initialLeft := res.Register(function())
+	if res.Err != nil {
+		return res
 	}
 
 	// for p.CurrentToken.Type == tokens.TokenTypeMul || p.CurrentToken.Type == tokens.TokenTypeDiv {
 	for slices.Contains(ops, p.CurrentToken.Type) {
 		opTok := *p.CurrentToken
-		p.Advance()
+		p.Advance() //TODO: res.Register(p.Advance)
 
-		right := function()
-		if right == nil {
-			//TODO: error handling
+		right := res.Register(function())
+		if res.Err != nil {
+			return res
 		}
 
 		if left == nil {
@@ -81,8 +127,8 @@ func (p *Parser) BinOp(function func() nodes.Node, ops []tokens.TokenType) nodes
 	}
 
 	if left == nil {
-		return initialLeft
+		return res.Success(initialLeft)
 	}
 
-	return left
+	return res.Success(left)
 }

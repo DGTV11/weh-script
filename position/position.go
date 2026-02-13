@@ -8,8 +8,8 @@ type Position struct {
 	FileText string
 }
 
-func NewPosition(index int, line int, column int, fileName string, fileText string) Position {
-	return Position{Index: index, Line: line, Column: column, FileName: fileName, FileText: fileText}
+func NewPosition(index int, line int, column int, fileName string, fileText string) *Position {
+	return &Position{Index: index, Line: line, Column: column, FileName: fileName, FileText: fileText}
 }
 
 func (p *Position) Advance(currentChar *rune) {
@@ -22,6 +22,6 @@ func (p *Position) Advance(currentChar *rune) {
 	}
 }
 
-func (p Position) Copy() Position {
+func (p Position) Copy() *Position {
 	return NewPosition(p.Index, p.Line, p.Column, p.FileName, p.FileText)
 }
