@@ -58,7 +58,9 @@ func NewToken(_type TokenType, value any, posStartIn *position.Position, posEndI
 
 func (t Token) String() string {
 	if t.Value == nil {
-		return fmt.Sprintf("Token{Type=%s}", TokenTypeName[t.Type])
+		// return fmt.Sprintf("Token{Type=%s}", TokenTypeName[t.Type])
+		return fmt.Sprintf("%s", TokenTypeName[t.Type])
 	}
-	return fmt.Sprintf("Token{Type=%s, Value=%v}", TokenTypeName[t.Type], t.Value)
+	// return fmt.Sprintf("Token{Type=%s, Value=%v}", TokenTypeName[t.Type], t.Value)
+	return fmt.Sprintf("%s:%v", TokenTypeName[t.Type], t.Value)
 }

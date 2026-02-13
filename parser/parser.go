@@ -78,10 +78,36 @@ func (p *Parser) Factor() *ParseResult {
 
 	tok := *p.CurrentToken
 
-	if tok.Type == tokens.TokenTypeInt || tok.Type == tokens.TokenTypeFloat {
+	if tok.Type == tokens.TokenTypePlus || tok.Type == tokens.TokenTypeMinus {
+		//TODO: res.Register(p.Advance())
+		p.Advance()
+		factor := res.Register(p.Factor())
+		if res.Err != nil {
+			return res
+		}
+		return res.Success(nodes.UnaryOpNode{OpTok: tok, NodeValue: factor})
+	} else if tok.Type == tokens.TokenTypeInt || tok.Type == tokens.TokenTypeFloat {
 		//TODO: res.Register(p.Advance())
 		p.Advance()
 		return res.Success(nodes.NumberNode{Tok: tok})
+	} else if tok.Type == tokens.TokenTypeLparen {
+		//TODO: res.Register(p.Advance())
+		p.Advance()
+		expr := res.Register(p.Expr())
+		if res.Err != nil {
+			return res
+		}
+		if p.CurrentToken.Type == tokens.TokenTypeRparen {
+			//TODO: res.Register(p.Advance())
+			p.Advance()
+			return res.Success(expr)
+		}
+		return res.Failure(
+			errors.NewInvalidSyntaxError(
+				tok.PosStart, tok.PosEnd,
+				"Expected ')'",
+			),
+		)
 	}
 
 	return res.Failure(

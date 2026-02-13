@@ -29,3 +29,13 @@ type BinOpNode struct {
 func (n BinOpNode) String() string {
 	return fmt.Sprintf("(%v, %v, %v)", n.LeftNode, n.OpTok, n.RightNode)
 }
+
+type UnaryOpNode struct {
+	Node
+	OpTok     tokens.Token
+	NodeValue Node
+}
+
+func (n UnaryOpNode) String() string {
+	return fmt.Sprintf("(%v, %v)", n.OpTok, n.NodeValue)
+}
