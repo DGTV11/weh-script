@@ -21,6 +21,9 @@ func run(fileName string, text string) (nodes.Node, *errors.Error) {
 
 	_parser := parser.NewParser(tokens)
 	ast := _parser.Parse()
+	if ast.Err != nil {
+		return nil, ast.Err
+	}
 
 	return ast.Node, ast.Err
 }
