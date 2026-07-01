@@ -2,9 +2,54 @@ package errors
 
 import (
 	"fmt"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/DGTV11/weh-script/position"
 )
+
+func StringWithArrows(text string, positionStart *position.Position, positionEnd *position.Position) string {
+	result := ""
+
+	// calculate indices
+	indexStart := max(strings.LastIndexByte(text[:positionStart.Index], '\n'), 0)
+	indexEnd := strings.IndexByte(text[:indexStart], '\n')
+	if indexEnd < 0 {
+		indexEnd = utf8.RuneCountInString(text)
+	}
+
+	// generate each line
+	lineCount := positionEnd.Line - positionStart.Line + 1
+	for i := 0; i < lineCount; i++ {
+		// calculate line cols
+		line := text[indexStart:indexEnd]
+		columnStart := 0
+		columnEnd := 0
+		if i == 0 {
+			columnStart = positionStart.Column
+		} else {
+			columnStart = 0
+		}
+		if i == lineCount-1 {
+			columnEnd = positionEnd.Column
+		} else {
+			columnEnd = utf8.RuneCountInString(line) - 1
+		}
+
+		// append to result
+		result += line + "\n"
+		result += strings.Repeat(" ", columnStart) + strings.Repeat("^", (columnEnd-columnStart))
+
+		// recalculate indices
+		indexStart = indexEnd
+		indexEnd = strings.IndexByte(text[:indexStart], '\n')
+		if indexEnd < 0 {
+			indexEnd = utf8.RuneCountInString(text)
+		}
+	}
+
+	return strings.ReplaceAll(result, "\t", "")
+}
 
 type Error struct {
 	PositionStart *position.Position
@@ -14,7 +59,7 @@ type Error struct {
 }
 
 func (e Error) String() string {
-	return fmt.Sprintf("%s: %s\nFile %s, line %d", e.Name, e.Details, e.PositionStart.FileName, e.PositionStart.Line+1) //!TODO: make string with arrows thingy
+	return fmt.Sprintf("%s: %s\nFile %s, line %d\n\n%s", e.Name, e.Details, e.PositionStart.FileName, e.PositionStart.Line+1, StringWithArrows(e.PositionStart.FileText, e.PositionStart, e.PositionEnd)) //!TODO: make string with arrows thingy
 }
 
 func NewIllegalCharError(positionStart *position.Position, positionEnd *position.Position, details string) *Error {

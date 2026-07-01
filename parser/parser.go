@@ -80,6 +80,7 @@ func (p *Parser) Factor() *ParseResult {
 
 	if tok.Type == tokens.TokenTypePlus || tok.Type == tokens.TokenTypeMinus {
 		//TODO: res.Register(p.Advance())
+		//NOTE: will be fixed in ep. 4 i believe
 		p.Advance()
 		factor := res.Register(p.Factor())
 		if res.Err != nil {
