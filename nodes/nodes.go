@@ -3,11 +3,15 @@ package nodes
 import (
 	"fmt"
 
+	// "github.com/DGTV11/weh-script/interpreter"
 	"github.com/DGTV11/weh-script/tokens"
 )
 
+//*Node definitions
+
 type Node interface {
 	String() string
+	Eval() any //TODO: RTResult?
 }
 
 type NumberNode struct {
@@ -38,4 +42,24 @@ type UnaryOpNode struct {
 
 func (n UnaryOpNode) String() string {
 	return fmt.Sprintf("(%v, %v)", n.OpTok, n.NodeValue)
+}
+
+//*Interpreter
+
+func (n NumberNode) Eval() any {
+	fmt.Printf("Found number node!")
+	return nil
+}
+
+func (n BinOpNode) Eval() any {
+	fmt.Printf("Found bin op node!")
+	n.LeftNode.Eval()
+	n.RightNode.Eval()
+	return nil
+}
+
+func (n UnaryOpNode) Eval() any {
+	fmt.Printf("Found unary op node!")
+	n.NodeValue.Eval()
+	return nil
 }

@@ -6,13 +6,14 @@ import (
 	"os"
 
 	"github.com/DGTV11/weh-script/errors"
-	"github.com/DGTV11/weh-script/nodes"
+	// "github.com/DGTV11/weh-script/nodes"
 
 	"github.com/DGTV11/weh-script/lexer"
 	"github.com/DGTV11/weh-script/parser"
 )
 
-func run(fileName string, text string) (nodes.Node, *errors.Error) {
+// func run(fileName string, text string) (nodes.Node, *errors.Error) {
+func run(fileName string, text string) (any, *errors.Error) {
 	_lexer := lexer.NewLexer(fileName, text)
 	tokens, err := _lexer.Tokenise()
 	if err != nil {
@@ -25,7 +26,9 @@ func run(fileName string, text string) (nodes.Node, *errors.Error) {
 		return nil, ast.Err
 	}
 
-	return ast.Node, ast.Err
+	ast.Node.Eval()
+
+	return nil, nil
 }
 
 var text string
