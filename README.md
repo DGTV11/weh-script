@@ -2,5 +2,5 @@
 
 Stupid programming language in Go
 
-Based on ![YouTube tutorials](https://youtu.be/Eythq9848Fg?si=VrLCZEi_zrKjEcHh) by ![David Callanan](https://github.com/davidcallanan)
+Based on ![YouTube tutorials](https://www.youtube.com/watch?v=Eythq9848Fg&list=PLZQftyCk7_SdoVexSmwy_tBgs7P0b97yD) by ![David Callanan](https://github.com/davidcallanan)
 
