@@ -26,9 +26,9 @@ func run(fileName string, text string) (any, *errors.Error) {
 		return nil, ast.Err
 	}
 
-	ast.Node.Eval()
+	result := ast.Node.Eval()
 
-	return nil, nil
+	return result, nil
 }
 
 var text string

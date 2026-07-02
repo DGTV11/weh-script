@@ -65,7 +65,7 @@ func (p *Parser) Parse() *ParseResult {
 	if res.Err == nil && p.CurrentToken.Type != tokens.TokenTypeEOF {
 		return res.Failure(
 			errors.NewInvalidSyntaxError(
-				p.CurrentToken.PosStart, p.CurrentToken.PosEnd,
+				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
 				"Expected '+', '-', '*', or '/'",
 			),
 		)
@@ -105,7 +105,7 @@ func (p *Parser) Factor() *ParseResult {
 		}
 		return res.Failure(
 			errors.NewInvalidSyntaxError(
-				tok.PosStart, tok.PosEnd,
+				tok.PosRange.Start, tok.PosRange.End,
 				"Expected ')'",
 			),
 		)
@@ -113,7 +113,7 @@ func (p *Parser) Factor() *ParseResult {
 
 	return res.Failure(
 		errors.NewInvalidSyntaxError(
-			tok.PosStart, tok.PosEnd,
+			tok.PosRange.Start, tok.PosRange.End,
 			"Expected int or float",
 		),
 	)

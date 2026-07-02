@@ -59,7 +59,7 @@ type Error struct {
 }
 
 func (e Error) String() string {
-	return fmt.Sprintf("%s: %s\nFile %s, line %d\n\n%s", e.Name, e.Details, e.PositionStart.FileName, e.PositionStart.Line+1, StringWithArrows(e.PositionStart.FileText, e.PositionStart, e.PositionEnd)) //!TODO: make string with arrows thingy
+	return fmt.Sprintf("%s: %s\nFile %s, line %d\n\n%s", e.Name, e.Details, e.PositionStart.FileName, e.PositionStart.Line+1, StringWithArrows(e.PositionStart.FileText, e.PositionStart, e.PositionEnd))
 }
 
 func NewIllegalCharError(positionStart *position.Position, positionEnd *position.Position, details string) *Error {

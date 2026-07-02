@@ -25,3 +25,8 @@ func (p *Position) Advance(currentChar *rune) {
 func (p Position) Copy() *Position {
 	return NewPosition(p.Index, p.Line, p.Column, p.FileName, p.FileText)
 }
+
+type PositionRange struct {
+	Start *Position
+	End   *Position
+}

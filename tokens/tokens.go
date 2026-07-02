@@ -35,8 +35,7 @@ var TokenTypeName = map[TokenType]string{
 type Token struct {
 	Type     TokenType
 	Value    any
-	PosStart *position.Position
-	PosEnd   *position.Position
+	PosRange position.PositionRange
 }
 
 func NewToken(_type TokenType, value any, posStartIn *position.Position, posEndIn *position.Position) Token {
@@ -53,7 +52,7 @@ func NewToken(_type TokenType, value any, posStartIn *position.Position, posEndI
 		posEnd = posEndIn.Copy()
 	}
 
-	return Token{Type: _type, Value: value, PosStart: posStart, PosEnd: posEnd}
+	return Token{Type: _type, Value: value, PosRange: position.PositionRange{Start: posStart, End: posEnd}}
 }
 
 func (t Token) String() string {
