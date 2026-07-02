@@ -92,6 +92,8 @@ func VisitBinOpNode(node nodes.BinOpNode, ctx context.Context) *RuntimeResult {
 		result, error = left.Mul(right)
 	case tokens.TokenTypeDiv:
 		result, error = left.Div(right)
+	case tokens.TokenTypePow:
+		result, error = left.Pow(right)
 	}
 
 	if error != nil {

@@ -73,21 +73,11 @@ func (p *Parser) Parse() *ParseResult {
 	return res
 }
 
-func (p *Parser) Factor() *ParseResult {
+func (p *Parser) Atom() *ParseResult {
 	res := NewParseResult()
-
 	tok := *p.CurrentToken
 
-	if tok.Type == tokens.TokenTypePlus || tok.Type == tokens.TokenTypeMinus {
-		//TODO: res.Register(p.Advance())
-		//NOTE: will be fixed in ep. 4 i believe
-		p.Advance()
-		factor := res.Register(p.Factor())
-		if res.Err != nil {
-			return res
-		}
-		return res.Success(nodes.NewUnaryOpNode(tok, factor))
-	} else if tok.Type == tokens.TokenTypeInt || tok.Type == tokens.TokenTypeFloat {
+	if tok.Type == tokens.TokenTypeInt || tok.Type == tokens.TokenTypeFloat {
 		//TODO: res.Register(p.Advance())
 		p.Advance()
 		return res.Success(nodes.NewNumberNode(tok))
@@ -114,24 +104,50 @@ func (p *Parser) Factor() *ParseResult {
 	return res.Failure(
 		errors.NewInvalidSyntaxError(
 			tok.PosRange.Start, tok.PosRange.End,
-			"Expected int or float",
+			"Expected int, float, '+', '-' or '('",
 		),
 	)
 }
 
+func (p *Parser) Power() *ParseResult {
+	return p.BinOp(p.Atom, []tokens.TokenType{tokens.TokenTypePow}, p.Factor)
+}
+
+func (p *Parser) Factor() *ParseResult {
+	res := NewParseResult()
+	tok := *p.CurrentToken
+
+	if tok.Type == tokens.TokenTypePlus || tok.Type == tokens.TokenTypeMinus {
+		//TODO: res.Register(p.Advance())
+		//NOTE: will be fixed in ep. 4 i believe
+		p.Advance()
+		factor := res.Register(p.Factor())
+		if res.Err != nil {
+			return res
+		}
+		return res.Success(nodes.NewUnaryOpNode(tok, factor))
+	}
+
+	return p.Power()
+}
+
 func (p *Parser) Term() *ParseResult {
-	return p.BinOp(p.Factor, []tokens.TokenType{tokens.TokenTypeMul, tokens.TokenTypeDiv})
+	return p.BinOp(p.Factor, []tokens.TokenType{tokens.TokenTypeMul, tokens.TokenTypeDiv}, nil)
 }
 
 func (p *Parser) Expr() *ParseResult {
-	return p.BinOp(p.Term, []tokens.TokenType{tokens.TokenTypePlus, tokens.TokenTypeMinus})
+	return p.BinOp(p.Term, []tokens.TokenType{tokens.TokenTypePlus, tokens.TokenTypeMinus}, nil)
 }
 
-func (p *Parser) BinOp(function func() *ParseResult, ops []tokens.TokenType) *ParseResult {
+func (p *Parser) BinOp(functionL func() *ParseResult, ops []tokens.TokenType, functionR func() *ParseResult) *ParseResult {
+	if functionR == nil {
+		functionR = functionL
+	}
+
 	res := NewParseResult()
 	var left nodes.Node = nil
 
-	initialLeft := res.Register(function())
+	initialLeft := res.Register(functionL())
 	if res.Err != nil {
 		return res
 	}
@@ -141,7 +157,7 @@ func (p *Parser) BinOp(function func() *ParseResult, ops []tokens.TokenType) *Pa
 		opTok := *p.CurrentToken
 		p.Advance() //TODO: res.Register(p.Advance)
 
-		right := res.Register(function())
+		right := res.Register(functionR())
 		if res.Err != nil {
 			return res
 		}

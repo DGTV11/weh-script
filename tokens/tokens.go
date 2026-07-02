@@ -15,6 +15,7 @@ const (
 	TokenTypeMinus
 	TokenTypeMul
 	TokenTypeDiv
+	TokenTypePow
 	TokenTypeLparen
 	TokenTypeRparen
 	TokenTypeEOF
@@ -27,6 +28,7 @@ var TokenTypeName = map[TokenType]string{
 	TokenTypeMinus:  "TokenTypeMinus",
 	TokenTypeMul:    "TokenTypeMul",
 	TokenTypeDiv:    "TokenTypeDiv",
+	TokenTypePow:    "TokenTypePow",
 	TokenTypeLparen: "TokenTypeLparen",
 	TokenTypeRparen: "TokenTypeRparen",
 	TokenTypeEOF:    "TokenTypeEOF",

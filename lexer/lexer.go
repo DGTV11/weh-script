@@ -42,19 +42,33 @@ func (l *Lexer) Tokenise() ([]tokens.Token, *errors.Error) {
 	for l.CurrentChar != nil {
 		switch char := *l.CurrentChar; char {
 		case ' ':
+			l.Advance()
 		case '\t':
+			l.Advance()
 		case '+':
 			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypePlus, nil, &l.Position, nil))
+			l.Advance()
 		case '-':
 			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeMinus, nil, &l.Position, nil))
+			l.Advance()
 		case '*':
-			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeMul, nil, &l.Position, nil))
+			posStart := l.Position.Copy()
+			l.Advance()
+			if l.CurrentChar != nil && *l.CurrentChar == '*' {
+				l.Advance()
+				tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypePow, nil, posStart, &l.Position))
+			} else {
+				tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeMul, nil, posStart, nil))
+			}
 		case '/':
 			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeDiv, nil, &l.Position, nil))
+			l.Advance()
 		case '(':
 			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeLparen, nil, &l.Position, nil))
+			l.Advance()
 		case ')':
 			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeRparen, nil, &l.Position, nil))
+			l.Advance()
 		default:
 			if unicode.IsDigit(char) {
 				tokp, err := l.MakeNumberToken()
@@ -73,7 +87,6 @@ func (l *Lexer) Tokenise() ([]tokens.Token, *errors.Error) {
 			return []tokens.Token{}, errors.NewIllegalCharError(positionStart, &l.Position, "'"+string(char)+"'")
 		}
 
-		l.Advance()
 	}
 
 	tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeEOF, nil, &l.Position, nil))
