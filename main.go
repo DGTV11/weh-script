@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/DGTV11/weh-script/errors"
-	// "github.com/DGTV11/weh-script/nodes"
+	"github.com/DGTV11/weh-script/interpreter"
 
 	"github.com/DGTV11/weh-script/lexer"
 	"github.com/DGTV11/weh-script/parser"
@@ -26,9 +26,9 @@ func run(fileName string, text string) (any, *errors.Error) {
 		return nil, ast.Err
 	}
 
-	result := ast.Node.Eval()
+	result := interpreter.Visit(ast.Node)
 
-	return result, nil
+	return result.Value, result.Err
 }
 
 var text string

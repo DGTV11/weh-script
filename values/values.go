@@ -3,6 +3,7 @@ package values
 import (
 	"strconv"
 
+	"github.com/DGTV11/weh-script/errors"
 	"github.com/DGTV11/weh-script/position"
 )
 
@@ -10,10 +11,10 @@ import (
 type BaseValueInterface interface {
 	GetPosRange() position.PositionRange
 	SetValuePos(position.PositionRange)
-	Add(other BaseValueInterface) BaseValueInterface
-	Sub(other BaseValueInterface) BaseValueInterface
-	Mul(other BaseValueInterface) BaseValueInterface
-	Div(other BaseValueInterface) BaseValueInterface
+	Add(other BaseValueInterface) (BaseValueInterface, *errors.Error)
+	Sub(other BaseValueInterface) (BaseValueInterface, *errors.Error)
+	Mul(other BaseValueInterface) (BaseValueInterface, *errors.Error)
+	Div(other BaseValueInterface) (BaseValueInterface, *errors.Error)
 	String() string
 }
 
@@ -34,42 +35,48 @@ type Integer struct {
 	Value int64
 }
 
-func (self *Integer) Add(other BaseValueInterface) BaseValueInterface {
+func (self *Integer) Add(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
 	switch o := other.(type) {
 	case *Integer:
-		return &Integer{Value: self.Value + o.Value}
+		return &Integer{Value: self.Value + o.Value}, nil
 	case *Float:
-		return &Float{Value: float64(self.Value) + o.Value}
+		return &Float{Value: float64(self.Value) + o.Value}, nil
 	}
-	return nil
+	return nil, nil
 }
-func (self *Integer) Sub(other BaseValueInterface) BaseValueInterface {
+func (self *Integer) Sub(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
 	switch o := other.(type) {
 	case *Integer:
-		return &Integer{Value: self.Value - o.Value}
+		return &Integer{Value: self.Value - o.Value}, nil
 	case *Float:
-		return &Float{Value: float64(self.Value) - o.Value}
+		return &Float{Value: float64(self.Value) - o.Value}, nil
 	}
-	return nil
+	return nil, nil
 }
-func (self *Integer) Mul(other BaseValueInterface) BaseValueInterface {
+func (self *Integer) Mul(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
 	switch o := other.(type) {
 	case *Integer:
-		return &Integer{Value: self.Value * o.Value}
+		return &Integer{Value: self.Value * o.Value}, nil
 	case *Float:
-		return &Float{Value: float64(self.Value) * o.Value}
+		return &Float{Value: float64(self.Value) * o.Value}, nil
 	}
-	return nil
+	return nil, nil
 }
-func (self *Integer) Div(other BaseValueInterface) BaseValueInterface {
+func (self *Integer) Div(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	otherPosRange := other.GetPosRange()
 	switch o := other.(type) {
 	case *Integer:
-		// return &Integer{Value: self.Value / o.Value}
-		return &Float{Value: float64(self.Value) / float64(o.Value)}
+		if o.Value == 0 {
+			return nil, errors.NewRuntimeError(otherPosRange.Start, otherPosRange.End, "Division by zero")
+		}
+		return &Float{Value: float64(self.Value) / float64(o.Value)}, nil
 	case *Float:
-		return &Float{Value: float64(self.Value) / o.Value}
+		if o.Value == 0.0 {
+			return nil, errors.NewRuntimeError(otherPosRange.Start, otherPosRange.End, "Division by zero")
+		}
+		return &Float{Value: float64(self.Value) / o.Value}, nil
 	}
-	return nil
+	return nil, nil
 }
 func (self *Integer) String() string {
 	return strconv.FormatInt(self.Value, 10)
@@ -80,41 +87,48 @@ type Float struct {
 	Value float64
 }
 
-func (self *Float) Add(other BaseValueInterface) BaseValueInterface {
+func (self *Float) Add(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
 	switch o := other.(type) {
 	case *Float:
-		return &Float{Value: self.Value + o.Value}
+		return &Float{Value: self.Value + o.Value}, nil
 	case *Integer:
-		return &Float{Value: self.Value + float64(o.Value)}
+		return &Float{Value: self.Value + float64(o.Value)}, nil
 	}
-	return nil
+	return nil, nil
 }
-func (self *Float) Sub(other BaseValueInterface) BaseValueInterface {
+func (self *Float) Sub(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
 	switch o := other.(type) {
 	case *Float:
-		return &Float{Value: self.Value - o.Value}
+		return &Float{Value: self.Value - o.Value}, nil
 	case *Integer:
-		return &Float{Value: self.Value - float64(o.Value)}
+		return &Float{Value: self.Value - float64(o.Value)}, nil
 	}
-	return nil
+	return nil, nil
 }
-func (self *Float) Mul(other BaseValueInterface) BaseValueInterface {
+func (self *Float) Mul(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
 	switch o := other.(type) {
 	case *Float:
-		return &Float{Value: self.Value * o.Value}
+		return &Float{Value: self.Value * o.Value}, nil
 	case *Integer:
-		return &Float{Value: self.Value * float64(o.Value)}
+		return &Float{Value: self.Value * float64(o.Value)}, nil
 	}
-	return nil
+	return nil, nil
 }
-func (self *Float) Div(other BaseValueInterface) BaseValueInterface {
+func (self *Float) Div(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	otherPosRange := other.GetPosRange()
 	switch o := other.(type) {
 	case *Float:
-		return &Float{Value: self.Value / o.Value}
+		if o.Value == 0.0 {
+			return nil, errors.NewRuntimeError(otherPosRange.Start, otherPosRange.End, "Division by zero")
+		}
+		return &Float{Value: self.Value / o.Value}, nil
 	case *Integer:
-		return &Float{Value: self.Value / float64(o.Value)}
+		if o.Value == 0 {
+			return nil, errors.NewRuntimeError(otherPosRange.Start, otherPosRange.End, "Division by zero")
+		}
+		return &Float{Value: self.Value / float64(o.Value)}, nil
 	}
-	return nil
+	return nil, nil
 }
 
 func (self *Float) String() string {

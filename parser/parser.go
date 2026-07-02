@@ -9,12 +9,12 @@ import (
 )
 
 type ParseResult struct {
-	Err  *errors.Error
 	Node nodes.Node
+	Err  *errors.Error
 }
 
 func NewParseResult() *ParseResult {
-	return &ParseResult{Err: nil, Node: nil}
+	return &ParseResult{Node: nil, Err: nil}
 }
 
 func (pr *ParseResult) Register(res *ParseResult) nodes.Node {
@@ -86,11 +86,11 @@ func (p *Parser) Factor() *ParseResult {
 		if res.Err != nil {
 			return res
 		}
-		return res.Success(nodes.UnaryOpNode{OpTok: tok, NodeValue: factor})
+		return res.Success(nodes.NewUnaryOpNode(tok, factor))
 	} else if tok.Type == tokens.TokenTypeInt || tok.Type == tokens.TokenTypeFloat {
 		//TODO: res.Register(p.Advance())
 		p.Advance()
-		return res.Success(nodes.NumberNode{Tok: tok})
+		return res.Success(nodes.NewNumberNode(tok))
 	} else if tok.Type == tokens.TokenTypeLparen {
 		//TODO: res.Register(p.Advance())
 		p.Advance()
@@ -147,9 +147,9 @@ func (p *Parser) BinOp(function func() *ParseResult, ops []tokens.TokenType) *Pa
 		}
 
 		if left == nil {
-			left = nodes.BinOpNode{LeftNode: initialLeft, OpTok: opTok, RightNode: right}
+			left = nodes.NewBinOpNode(initialLeft, opTok, right)
 		} else {
-			left = nodes.BinOpNode{LeftNode: left, OpTok: opTok, RightNode: right}
+			left = nodes.NewBinOpNode(left, opTok, right)
 		}
 	}
 

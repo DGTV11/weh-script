@@ -3,18 +3,15 @@ package nodes
 import (
 	"fmt"
 
-	// "github.com/DGTV11/weh-script/interpreter"
 	"github.com/DGTV11/weh-script/position"
 	"github.com/DGTV11/weh-script/tokens"
-	"github.com/DGTV11/weh-script/values"
 )
 
-//*Node definitions
+//*Base Node
 
 type Node interface {
 	GetPosRange() position.PositionRange
 	String() string
-	Eval() values.BaseValueInterface //TODO: RTResult?
 }
 
 type BaseNode struct {
@@ -25,6 +22,7 @@ func (b BaseNode) GetPosRange() position.PositionRange {
 	return b.PosRange
 }
 
+// *Node Definitions
 type NumberNode struct {
 	BaseNode
 	Tok tokens.Token
@@ -79,53 +77,4 @@ func NewUnaryOpNode(opTok tokens.Token, nodeValue Node) UnaryOpNode {
 
 func (n UnaryOpNode) String() string {
 	return fmt.Sprintf("(%v, %v)", n.OpTok, n.NodeValue)
-}
-
-//*Interpreter
-
-func (n NumberNode) Eval() values.BaseValueInterface {
-	var result values.BaseValueInterface = nil
-
-	switch n.Tok.Type {
-	case tokens.TokenTypeInt:
-		result = &values.Integer{Value: n.Tok.Value.(int64)}
-	case tokens.TokenTypeFloat:
-		result = &values.Float{Value: n.Tok.Value.(float64)}
-	}
-
-	result.SetValuePos(result.GetPosRange())
-	return result
-}
-
-func (n BinOpNode) Eval() values.BaseValueInterface {
-	left := n.LeftNode.Eval()
-	right := n.RightNode.Eval()
-
-	var result values.BaseValueInterface = nil
-
-	switch n.OpTok.Type {
-	case tokens.TokenTypePlus:
-		result = left.Add(right)
-	case tokens.TokenTypeMinus:
-		result = left.Sub(right)
-	case tokens.TokenTypeMul:
-		result = left.Mul(right)
-	case tokens.TokenTypeDiv:
-		result = left.Div(right)
-	}
-
-	result.SetValuePos(result.GetPosRange())
-	return result
-}
-
-func (n UnaryOpNode) Eval() values.BaseValueInterface {
-	number := n.NodeValue.Eval()
-
-	switch n.OpTok.Type {
-	case tokens.TokenTypeMinus:
-		number = number.Mul(&values.Integer{Value: -1})
-	}
-
-	number.SetValuePos(number.GetPosRange())
-	return number
 }
