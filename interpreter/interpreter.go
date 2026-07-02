@@ -3,6 +3,7 @@ package interpreter
 import (
 	"fmt"
 
+	"github.com/DGTV11/weh-script/context"
 	"github.com/DGTV11/weh-script/errors"
 	"github.com/DGTV11/weh-script/nodes"
 	"github.com/DGTV11/weh-script/tokens"
@@ -35,27 +36,21 @@ func (rr *RuntimeResult) Failure(err *errors.Error) *RuntimeResult {
 	return rr
 }
 
-type Context struct {
-	DisplayName    string
-	Parent         *Context
-	ParentEntryPos *position.Position
-}
-
-func Visit(node nodes.Node) *RuntimeResult {
+func Visit(node nodes.Node, ctx context.Context) *RuntimeResult {
 	switch n := node.(type) {
 	case nodes.NumberNode:
-		return VisitNumberNode(node.(nodes.NumberNode))
+		return VisitNumberNode(node.(nodes.NumberNode), ctx)
 	case nodes.BinOpNode:
-		return VisitBinOpNode(node.(nodes.BinOpNode))
+		return VisitBinOpNode(node.(nodes.BinOpNode), ctx)
 	case nodes.UnaryOpNode:
-		return VisitUnaryOpNode(node.(nodes.UnaryOpNode))
+		return VisitUnaryOpNode(node.(nodes.UnaryOpNode), ctx)
 	default:
 		posRange := node.GetPosRange()
-		return NewRuntimeResult().Failure(errors.NotImplementedError(posRange.Start, posRange.End, fmt.Sprintf("No Visit function defined for node type %T", n)))
+		return NewRuntimeResult().Failure(errors.NotImplementedError(posRange.Start, posRange.End, fmt.Sprintf("No Visit function defined for node type %T", n), ctx))
 	}
 }
 
-func VisitNumberNode(node nodes.NumberNode) *RuntimeResult {
+func VisitNumberNode(node nodes.NumberNode, ctx context.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 	var number values.BaseValueInterface = nil
 
@@ -65,21 +60,22 @@ func VisitNumberNode(node nodes.NumberNode) *RuntimeResult {
 	case tokens.TokenTypeFloat:
 		number = &values.Float{Value: node.Tok.Value.(float64)}
 	default:
-		return res.Failure(errors.NotImplementedError(node.Tok.PosRange.Start, node.Tok.PosRange.End, fmt.Sprintf("NumberNode not implemented for token type %s", tokens.TokenTypeName[node.Tok.Type])))
+		return res.Failure(errors.NotImplementedError(node.Tok.PosRange.Start, node.Tok.PosRange.End, fmt.Sprintf("NumberNode not implemented for token type %s", tokens.TokenTypeName[node.Tok.Type]), ctx))
 	}
 
+	number.SetContext(ctx)
 	number.SetValuePos(node.GetPosRange())
 	return res.Success(number)
 }
 
-func VisitBinOpNode(node nodes.BinOpNode) *RuntimeResult {
+func VisitBinOpNode(node nodes.BinOpNode, ctx context.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
-	left := res.Register(Visit(node.LeftNode))
+	left := res.Register(Visit(node.LeftNode, ctx))
 	if res.Err != nil {
 		return res
 	}
-	right := res.Register(Visit(node.RightNode))
+	right := res.Register(Visit(node.RightNode, ctx))
 	if res.Err != nil {
 		return res
 	}
@@ -101,14 +97,15 @@ func VisitBinOpNode(node nodes.BinOpNode) *RuntimeResult {
 	if error != nil {
 		return res.Failure(error)
 	}
+	result.SetContext(ctx)
 	result.SetValuePos(node.GetPosRange())
 	return res.Success(result)
 }
 
-func VisitUnaryOpNode(node nodes.UnaryOpNode) *RuntimeResult {
+func VisitUnaryOpNode(node nodes.UnaryOpNode, ctx context.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
-	number := res.Register(Visit(node.NodeValue))
+	number := res.Register(Visit(node.NodeValue, ctx))
 	if res.Err != nil {
 		return res
 	}
@@ -123,6 +120,7 @@ func VisitUnaryOpNode(node nodes.UnaryOpNode) *RuntimeResult {
 	if error != nil {
 		return res.Failure(error)
 	}
+	number.SetContext(ctx)
 	number.SetValuePos(number.GetPosRange())
 	return res.Success(number)
 }

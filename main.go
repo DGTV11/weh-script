@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/DGTV11/weh-script/context"
 	"github.com/DGTV11/weh-script/errors"
 	"github.com/DGTV11/weh-script/interpreter"
-
 	"github.com/DGTV11/weh-script/lexer"
 	"github.com/DGTV11/weh-script/parser"
 )
@@ -26,7 +26,8 @@ func run(fileName string, text string) (any, *errors.Error) {
 		return nil, ast.Err
 	}
 
-	result := interpreter.Visit(ast.Node)
+	context := context.Context{DisplayName: "<program>"}
+	result := interpreter.Visit(ast.Node, context)
 
 	return result.Value, result.Err
 }
