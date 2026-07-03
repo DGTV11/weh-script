@@ -12,7 +12,7 @@ import (
 
 type Lexer struct {
 	FileName    string
-	Text        string
+	Text        []rune
 	Position    position.Position
 	CurrentChar *rune
 }
@@ -20,7 +20,7 @@ type Lexer struct {
 func NewLexer(fileName string, text string) *Lexer {
 	newLexer := Lexer{
 		FileName:    fileName,
-		Text:        text,
+		Text:        []rune(text),
 		Position:    *position.NewPosition(-1, 0, -1, fileName, text),
 		CurrentChar: nil,
 	}
@@ -34,7 +34,7 @@ func (l *Lexer) Advance() {
 		l.CurrentChar = nil
 		return
 	}
-	l.CurrentChar = &[]rune(l.Text)[l.Position.Index]
+	l.CurrentChar = &l.Text[l.Position.Index]
 }
 
 func (l *Lexer) Tokenise() ([]tokens.Token, *errors.Error) {
