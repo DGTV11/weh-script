@@ -38,6 +38,38 @@ func (n NumberNode) String() string {
 	return fmt.Sprintf("%v", n.Tok)
 }
 
+type VariableAccessNode struct {
+	BaseNode
+	VarNameTok tokens.Token
+}
+
+func NewVariableAccessNode(varNameTok tokens.Token) VariableAccessNode {
+	return VariableAccessNode{
+		VarNameTok: varNameTok,
+		BaseNode:   BaseNode{PosRange: position.PositionRange{Start: varNameTok.PosRange.Start, End: varNameTok.PosRange.End}},
+	}
+}
+func (n VariableAccessNode) String() string {
+	return fmt.Sprintf("(ACCESS %v)", n.VarNameTok)
+}
+
+type VariableAssignNode struct {
+	BaseNode
+	VarNameTok tokens.Token
+	ValueNode  Node
+}
+
+func NewVariableAssignNode(varNameTok tokens.Token, valueNode Node) VariableAssignNode {
+	return VariableAssignNode{
+		VarNameTok: varNameTok,
+		ValueNode:  valueNode,
+		BaseNode:   BaseNode{PosRange: position.PositionRange{Start: varNameTok.PosRange.Start, End: varNameTok.PosRange.End}},
+	}
+}
+func (n VariableAssignNode) String() string {
+	return fmt.Sprintf("(ASSIGN %v = %v)", n.VarNameTok, n.ValueNode)
+}
+
 type BinOpNode struct {
 	BaseNode
 	LeftNode  Node

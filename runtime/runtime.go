@@ -1,4 +1,4 @@
-package context
+package runtime
 
 import (
 	"fmt"
@@ -10,6 +10,7 @@ type Context struct {
 	DisplayName    string
 	Parent         *Context
 	ParentEntryPos *position.Position
+	SymTable       *SymbolTable
 }
 
 func (ctx *Context) GenerateTraceback(positionStart *position.Position) string {
@@ -23,4 +24,28 @@ func (ctx *Context) GenerateTraceback(positionStart *position.Position) string {
 		currentCtx = currentCtx.Parent
 	}
 	return "Traceback (most recent call last):\n" + result
+}
+
+type SymbolTable struct {
+	Symbols map[string]any
+	Parent  *SymbolTable
+}
+
+func (s SymbolTable) GetSymbol(name string) any {
+	val, ok := s.Symbols[name]
+	if ok == true {
+		return val
+	}
+	if s.Parent != nil {
+		return s.Parent.GetSymbol(name)
+	}
+	return nil
+}
+
+func (s SymbolTable) SetSymbol(name string, val any) {
+	s.Symbols[name] = val
+}
+
+func (s SymbolTable) RemoveSymbol(name string) {
+	delete(s.Symbols, name)
 }

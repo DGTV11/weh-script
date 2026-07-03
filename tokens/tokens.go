@@ -11,27 +11,37 @@ type TokenType int
 const (
 	TokenTypeInt TokenType = iota
 	TokenTypeFloat
+	TokenTypeIdentifier
+	TokenTypeKeyword
 	TokenTypePlus
 	TokenTypeMinus
 	TokenTypeMul
 	TokenTypeDiv
 	TokenTypePow
+	TokenTypeEquals
 	TokenTypeLparen
 	TokenTypeRparen
 	TokenTypeEOF
 )
 
 var TokenTypeName = map[TokenType]string{
-	TokenTypeInt:    "TokenTypeInt",
-	TokenTypeFloat:  "TokenTypeFloat",
-	TokenTypePlus:   "TokenTypePlus",
-	TokenTypeMinus:  "TokenTypeMinus",
-	TokenTypeMul:    "TokenTypeMul",
-	TokenTypeDiv:    "TokenTypeDiv",
-	TokenTypePow:    "TokenTypePow",
-	TokenTypeLparen: "TokenTypeLparen",
-	TokenTypeRparen: "TokenTypeRparen",
-	TokenTypeEOF:    "TokenTypeEOF",
+	TokenTypeInt:        "TokenTypeInt",
+	TokenTypeFloat:      "TokenTypeFloat",
+	TokenTypeIdentifier: "TokenTypeIdentifier",
+	TokenTypeKeyword:    "TokenTypeKeyword",
+	TokenTypePlus:       "TokenTypePlus",
+	TokenTypeMinus:      "TokenTypeMinus",
+	TokenTypeMul:        "TokenTypeMul",
+	TokenTypeDiv:        "TokenTypeDiv",
+	TokenTypePow:        "TokenTypePow",
+	TokenTypeEquals:     "TokenTypeEquals",
+	TokenTypeLparen:     "TokenTypeLparen",
+	TokenTypeRparen:     "TokenTypeRparen",
+	TokenTypeEOF:        "TokenTypeEOF",
+}
+
+var Keywords = []string{
+	"var",
 }
 
 type Token struct {
@@ -55,6 +65,10 @@ func NewToken(_type TokenType, value any, posStartIn *position.Position, posEndI
 	}
 
 	return Token{Type: _type, Value: value, PosRange: position.PositionRange{Start: posStart, End: posEnd}}
+}
+
+func (t Token) Matches(type_ TokenType, value any) bool {
+	return t.Type == type_ && t.Value == value
 }
 
 func (t Token) String() string {

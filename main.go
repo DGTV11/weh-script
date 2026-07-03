@@ -5,15 +5,21 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/DGTV11/weh-script/context"
 	"github.com/DGTV11/weh-script/errors"
 	"github.com/DGTV11/weh-script/interpreter"
 	"github.com/DGTV11/weh-script/lexer"
 	"github.com/DGTV11/weh-script/parser"
+	"github.com/DGTV11/weh-script/runtime"
+	"github.com/DGTV11/weh-script/values"
 )
 
-// func run(fileName string, text string) (nodes.Node, *errors.Error) {
-func run(fileName string, text string) (any, *errors.Error) {
+func SetupGlobalymbolTable() *runtime.SymbolTable {
+	GlobalSymbolTable := runtime.SymbolTable{Symbols: map[string]any{}}
+	GlobalSymbolTable.SetSymbol("null", &values.Integer{Value: 0})
+	return &GlobalSymbolTable
+}
+
+func Run(fileName string, text string, globalSymbolTable *runtime.SymbolTable) (any, *errors.Error) {
 	_lexer := lexer.NewLexer(fileName, text)
 	tokens, err := _lexer.Tokenise()
 	if err != nil {
@@ -26,7 +32,7 @@ func run(fileName string, text string) (any, *errors.Error) {
 		return nil, ast.Err
 	}
 
-	context := context.Context{DisplayName: "<program>"}
+	context := runtime.Context{DisplayName: "<program>", SymTable: globalSymbolTable}
 	result := interpreter.Visit(ast.Node, context)
 
 	return result.Value, result.Err
@@ -36,6 +42,8 @@ var text string
 
 func main() {
 	fmt.Println("WehScript Programming Language")
+
+	globalSymbolTable := SetupGlobalymbolTable()
 
 	for true {
 		fmt.Print("wehscript > ")
@@ -48,7 +56,7 @@ func main() {
 			fmt.Println(serr)
 		}
 
-		res, err := run("<stdin>", scanner.Text())
+		res, err := Run("<stdin>", scanner.Text(), globalSymbolTable)
 
 		if err != nil {
 			fmt.Println(err)

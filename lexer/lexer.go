@@ -1,6 +1,7 @@
 package lexer
 
 import (
+	"slices"
 	"strconv"
 	"unicode"
 
@@ -63,6 +64,9 @@ func (l *Lexer) Tokenise() ([]tokens.Token, *errors.Error) {
 		case '/':
 			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeDiv, nil, &l.Position, nil))
 			l.Advance()
+		case '=':
+			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeEquals, nil, &l.Position, nil))
+			l.Advance()
 		case '(':
 			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeLparen, nil, &l.Position, nil))
 			l.Advance()
@@ -76,6 +80,16 @@ func (l *Lexer) Tokenise() ([]tokens.Token, *errors.Error) {
 					positionStart := l.Position.Copy()
 					l.Advance()
 					return []tokens.Token{}, errors.NewInvalidNumberError(positionStart, &l.Position, err.Error())
+				}
+				tokenList = append(tokenList, *tokp)
+
+				continue
+			} else if unicode.IsLetter(char) {
+				tokp, err := l.MakeIdentifierOrKeywordToken()
+				if err != nil {
+					positionStart := l.Position.Copy()
+					l.Advance()
+					return []tokens.Token{}, errors.NewInvalidNumberError(positionStart, &l.Position, err.Error()) //TODO
 				}
 				tokenList = append(tokenList, *tokp)
 
@@ -145,5 +159,35 @@ func (l *Lexer) MakeNumberToken() (*tokens.Token, error) {
 
 	// return &tokens.Token{Type: _type, Value: value}, nil
 	newTok := tokens.NewToken(_type, value, posStart, &l.Position)
+	return &newTok, nil
+}
+
+func (l *Lexer) MakeIdentifierOrKeywordToken() (*tokens.Token, error) {
+	idStr := ""
+	posStart := l.Position.Copy()
+
+	for l.CurrentChar != nil {
+		char := *l.CurrentChar
+
+		if unicode.IsLetter(char) || unicode.IsDigit(char) || char == '_' {
+			idStr += string(char)
+
+			l.Advance()
+
+			continue
+		}
+
+		break
+	}
+
+	var _type tokens.TokenType
+
+	if slices.Contains(tokens.Keywords, idStr) {
+		_type = tokens.TokenTypeKeyword
+	} else {
+		_type = tokens.TokenTypeIdentifier
+	}
+
+	newTok := tokens.NewToken(_type, idStr, posStart, &l.Position)
 	return &newTok, nil
 }

@@ -81,6 +81,10 @@ func (p *Parser) Atom() *ParseResult {
 		//TODO: res.Register(p.Advance())
 		p.Advance()
 		return res.Success(nodes.NewNumberNode(tok))
+	} else if tok.Type == tokens.TokenTypeIdentifier {
+		//TODO: res.Register(p.Advance())
+		p.Advance()
+		return res.Success(nodes.NewVariableAccessNode(tok))
 	} else if tok.Type == tokens.TokenTypeLparen {
 		//TODO: res.Register(p.Advance())
 		p.Advance()
@@ -136,6 +140,44 @@ func (p *Parser) Term() *ParseResult {
 }
 
 func (p *Parser) Expr() *ParseResult {
+	res := NewParseResult()
+	tok := *p.CurrentToken
+
+	if tok.Matches(tokens.TokenTypeKeyword, "var") {
+		p.Advance() //TODO: res.Register(p.Advance)
+
+		tok = *p.CurrentToken
+		if tok.Type != tokens.TokenTypeIdentifier {
+			return res.Failure(
+				errors.NewInvalidSyntaxError(
+					tok.PosRange.Start, tok.PosRange.End,
+					"Expected identifier",
+				),
+			)
+		}
+
+		varName := tok
+		p.Advance() //TODO: res.Register(p.Advance)
+
+		tok = *p.CurrentToken
+		if tok.Type != tokens.TokenTypeEquals {
+			return res.Failure(
+				errors.NewInvalidSyntaxError(
+					tok.PosRange.Start, tok.PosRange.End,
+					"Expected '='",
+				),
+			)
+		}
+
+		p.Advance() //TODO: res.Register(p.Advance)
+
+		expr := res.Register(p.Expr())
+		if res.Err != nil {
+			return res
+		}
+		return res.Success(nodes.NewVariableAssignNode(varName, expr))
+	}
+
 	return p.BinOp(p.Term, []tokens.TokenType{tokens.TokenTypePlus, tokens.TokenTypeMinus}, nil)
 }
 

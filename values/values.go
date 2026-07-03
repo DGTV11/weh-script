@@ -4,9 +4,9 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/DGTV11/weh-script/context"
 	"github.com/DGTV11/weh-script/errors"
 	"github.com/DGTV11/weh-script/position"
+	"github.com/DGTV11/weh-script/runtime"
 )
 
 // *Helper functions
@@ -31,8 +31,8 @@ func IPow(a, n int64) int64 {
 type BaseValueInterface interface {
 	GetPosRange() position.PositionRange
 	SetValuePos(position.PositionRange)
-	GetContext() context.Context
-	SetContext(ctx context.Context)
+	GetContext() runtime.Context
+	SetContext(ctx runtime.Context)
 	Add(other BaseValueInterface) (BaseValueInterface, *errors.Error)
 	Sub(other BaseValueInterface) (BaseValueInterface, *errors.Error)
 	Mul(other BaseValueInterface) (BaseValueInterface, *errors.Error)
@@ -43,7 +43,7 @@ type BaseValueInterface interface {
 
 type BaseValue struct {
 	PosRange position.PositionRange
-	Ctx      context.Context
+	Ctx      runtime.Context
 }
 
 func (bv *BaseValue) GetPosRange() position.PositionRange {
@@ -53,10 +53,10 @@ func (bv *BaseValue) SetValuePos(posRange position.PositionRange) {
 	bv.PosRange = posRange
 }
 
-func (bv *BaseValue) GetContext() context.Context {
+func (bv *BaseValue) GetContext() runtime.Context {
 	return bv.Ctx
 }
-func (bv *BaseValue) SetContext(ctx context.Context) {
+func (bv *BaseValue) SetContext(ctx runtime.Context) {
 	bv.Ctx = ctx
 }
 
