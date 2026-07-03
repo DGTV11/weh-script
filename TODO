@@ -1,6 +1,6 @@
 1) finish the tutorials
-  - STOPPED AT: https://www.youtube.com/watch?v=3PW552YHwy0&list=PLZQftyCk7_SdoVexSmwy_tBgs7P0b97yD&index=5
-  - add OOP https://craftinginterpreters.com/the-lox-language.html#classes
+  - STOPPED AT: https://www.youtube.com/watch?v=r46EONXC1i0&list=PLZQftyCk7_SdoVexSmwy_tBgs7P0b97yD&index=6
+  - add OOP? https://craftinginterpreters.com/the-lox-language.html#classes
 2) make bytecode compiler + reg-based VM
   - make language statically typed?
 3) make language runtime thingy (which can be compiled to executable) or stick with bytecode files

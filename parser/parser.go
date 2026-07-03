@@ -9,19 +9,25 @@ import (
 )
 
 type ParseResult struct {
-	Node nodes.Node
-	Err  *errors.Error
+	Node         nodes.Node
+	Err          *errors.Error
+	AdvanceCount int
 }
 
 func NewParseResult() *ParseResult {
-	return &ParseResult{Node: nil, Err: nil}
+	return &ParseResult{Node: nil, Err: nil, AdvanceCount: 0}
 }
 
 func (pr *ParseResult) Register(res *ParseResult) nodes.Node {
+	pr.AdvanceCount += res.AdvanceCount
 	if res.Err != nil {
 		pr.Err = res.Err
 	}
 	return res.Node
+}
+
+func (pr *ParseResult) RegisterAdvance() {
+	pr.AdvanceCount++
 }
 
 func (pr *ParseResult) Success(node nodes.Node) *ParseResult {
@@ -30,7 +36,9 @@ func (pr *ParseResult) Success(node nodes.Node) *ParseResult {
 }
 
 func (pr *ParseResult) Failure(err *errors.Error) *ParseResult {
-	pr.Err = err
+	if pr.Err == nil || pr.AdvanceCount == 0 {
+		pr.Err = err
+	}
 	return pr
 }
 
@@ -78,22 +86,22 @@ func (p *Parser) Atom() *ParseResult {
 	tok := *p.CurrentToken
 
 	if tok.Type == tokens.TokenTypeInt || tok.Type == tokens.TokenTypeFloat {
-		//TODO: res.Register(p.Advance())
+		res.RegisterAdvance()
 		p.Advance()
 		return res.Success(nodes.NewNumberNode(tok))
 	} else if tok.Type == tokens.TokenTypeIdentifier {
-		//TODO: res.Register(p.Advance())
+		res.RegisterAdvance()
 		p.Advance()
 		return res.Success(nodes.NewVariableAccessNode(tok))
 	} else if tok.Type == tokens.TokenTypeLparen {
-		//TODO: res.Register(p.Advance())
+		res.RegisterAdvance()
 		p.Advance()
 		expr := res.Register(p.Expr())
 		if res.Err != nil {
 			return res
 		}
 		if p.CurrentToken.Type == tokens.TokenTypeRparen {
-			//TODO: res.Register(p.Advance())
+			res.RegisterAdvance()
 			p.Advance()
 			return res.Success(expr)
 		}
@@ -108,7 +116,7 @@ func (p *Parser) Atom() *ParseResult {
 	return res.Failure(
 		errors.NewInvalidSyntaxError(
 			tok.PosRange.Start, tok.PosRange.End,
-			"Expected int, float, '+', '-' or '('",
+			"Expected integer, float, identifier, '+', '-' or '('",
 		),
 	)
 }
@@ -122,8 +130,7 @@ func (p *Parser) Factor() *ParseResult {
 	tok := *p.CurrentToken
 
 	if tok.Type == tokens.TokenTypePlus || tok.Type == tokens.TokenTypeMinus {
-		//TODO: res.Register(p.Advance())
-		//NOTE: will be fixed in ep. 4 i believe
+		res.RegisterAdvance()
 		p.Advance()
 		factor := res.Register(p.Factor())
 		if res.Err != nil {
@@ -144,7 +151,8 @@ func (p *Parser) Expr() *ParseResult {
 	tok := *p.CurrentToken
 
 	if tok.Matches(tokens.TokenTypeKeyword, "var") {
-		p.Advance() //TODO: res.Register(p.Advance)
+		res.RegisterAdvance()
+		p.Advance()
 
 		tok = *p.CurrentToken
 		if tok.Type != tokens.TokenTypeIdentifier {
@@ -157,7 +165,8 @@ func (p *Parser) Expr() *ParseResult {
 		}
 
 		varName := tok
-		p.Advance() //TODO: res.Register(p.Advance)
+		res.RegisterAdvance()
+		p.Advance()
 
 		tok = *p.CurrentToken
 		if tok.Type != tokens.TokenTypeEquals {
@@ -169,7 +178,8 @@ func (p *Parser) Expr() *ParseResult {
 			)
 		}
 
-		p.Advance() //TODO: res.Register(p.Advance)
+		res.RegisterAdvance()
+		p.Advance()
 
 		expr := res.Register(p.Expr())
 		if res.Err != nil {
@@ -178,7 +188,16 @@ func (p *Parser) Expr() *ParseResult {
 		return res.Success(nodes.NewVariableAssignNode(varName, expr))
 	}
 
-	return p.BinOp(p.Term, []tokens.TokenType{tokens.TokenTypePlus, tokens.TokenTypeMinus}, nil)
+	node := res.Register(p.BinOp(p.Term, []tokens.TokenType{tokens.TokenTypePlus, tokens.TokenTypeMinus}, nil))
+	if res.Err != nil {
+		return res.Failure(
+			errors.NewInvalidSyntaxError(
+				tok.PosRange.Start, tok.PosRange.End,
+				"Expected 'var', integer, float, identifier, '+', '-' or '('",
+			),
+		)
+	}
+	return res.Success(node)
 }
 
 func (p *Parser) BinOp(functionL func() *ParseResult, ops []tokens.TokenType, functionR func() *ParseResult) *ParseResult {
@@ -197,7 +216,8 @@ func (p *Parser) BinOp(functionL func() *ParseResult, ops []tokens.TokenType, fu
 	// for p.CurrentToken.Type == tokens.TokenTypeMul || p.CurrentToken.Type == tokens.TokenTypeDiv {
 	for slices.Contains(ops, p.CurrentToken.Type) {
 		opTok := *p.CurrentToken
-		p.Advance() //TODO: res.Register(p.Advance)
+		res.RegisterAdvance()
+		p.Advance()
 
 		right := res.Register(functionR())
 		if res.Err != nil {

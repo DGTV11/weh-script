@@ -84,12 +84,12 @@ func (l *Lexer) Tokenise() ([]tokens.Token, *errors.Error) {
 				tokenList = append(tokenList, *tokp)
 
 				continue
-			} else if unicode.IsLetter(char) {
+			} else if unicode.IsLetter(char) || char == '_' {
 				tokp, err := l.MakeIdentifierOrKeywordToken()
 				if err != nil {
 					positionStart := l.Position.Copy()
 					l.Advance()
-					return []tokens.Token{}, errors.NewInvalidNumberError(positionStart, &l.Position, err.Error()) //TODO
+					return []tokens.Token{}, errors.NewInvalidNumberError(positionStart, &l.Position, err.Error())
 				}
 				tokenList = append(tokenList, *tokp)
 
@@ -128,7 +128,7 @@ func (l *Lexer) MakeNumberToken() (*tokens.Token, error) {
 			if dotCount == 1 {
 				break
 			}
-			dotCount += 1
+			dotCount++
 			numStr += "."
 
 			l.Advance()
