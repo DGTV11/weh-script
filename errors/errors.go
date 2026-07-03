@@ -3,7 +3,6 @@ package errors
 import (
 	"fmt"
 	"strings"
-	"unicode/utf8"
 
 	"github.com/DGTV11/weh-script/position"
 	"github.com/DGTV11/weh-script/runtime"
@@ -17,7 +16,7 @@ func StringWithArrows(text string, positionStart *position.Position, positionEnd
 	indexStart := max(strings.LastIndexByte(text[:positionStart.Index], '\n'), 0)
 	indexEnd := strings.IndexByte(text[:indexStart], '\n')
 	if indexEnd < 0 {
-		indexEnd = utf8.RuneCountInString(text)
+		indexEnd = len(text)
 	}
 
 	// generate each line
@@ -35,7 +34,7 @@ func StringWithArrows(text string, positionStart *position.Position, positionEnd
 		if i == lineCount-1 {
 			columnEnd = positionEnd.Column
 		} else {
-			columnEnd = utf8.RuneCountInString(line) - 1
+			columnEnd = len(line) - 1
 		}
 
 		// append to result
@@ -46,7 +45,7 @@ func StringWithArrows(text string, positionStart *position.Position, positionEnd
 		indexStart = indexEnd
 		indexEnd = strings.IndexByte(text[:indexStart], '\n')
 		if indexEnd < 0 {
-			indexEnd = utf8.RuneCountInString(text)
+			indexEnd = len(text)
 		}
 	}
 
