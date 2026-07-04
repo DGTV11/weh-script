@@ -64,9 +64,68 @@ func (l *Lexer) Tokenise() ([]tokens.Token, *errors.Error) {
 		case '/':
 			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeDiv, nil, &l.Position, nil))
 			l.Advance()
-		case '=':
-			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeEquals, nil, &l.Position, nil))
+		case '!':
+			posStart := l.Position.Copy()
 			l.Advance()
+			if l.CurrentChar != nil && *l.CurrentChar == '=' {
+				l.Advance()
+				tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeNE, nil, posStart, &l.Position))
+			} else {
+				tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeLNot, nil, posStart, nil))
+			}
+		case '=':
+			posStart := l.Position.Copy()
+			l.Advance()
+			if l.CurrentChar != nil && *l.CurrentChar == '=' {
+				l.Advance()
+				tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeEE, nil, posStart, &l.Position))
+			} else {
+				tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeEquals, nil, posStart, nil))
+			}
+		case '<':
+			posStart := l.Position.Copy()
+			l.Advance()
+			if l.CurrentChar != nil && *l.CurrentChar == '=' {
+				l.Advance()
+				tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeLTE, nil, posStart, &l.Position))
+			} else {
+				tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeLT, nil, posStart, nil))
+			}
+		case '>':
+			posStart := l.Position.Copy()
+			l.Advance()
+			if l.CurrentChar != nil && *l.CurrentChar == '=' {
+				l.Advance()
+				tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeGTE, nil, posStart, &l.Position))
+			} else {
+				tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeGT, nil, posStart, nil))
+			}
+		case '&':
+			posStart := l.Position.Copy()
+			l.Advance()
+			if l.CurrentChar != nil && *l.CurrentChar == '&' {
+				l.Advance()
+				tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeLAnd, nil, posStart, &l.Position))
+			} else {
+				// tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeBAnd, nil, posStart, nil))
+				return []tokens.Token{}, errors.NewSyntaxNotImplementedError(posStart, &l.Position, "Bitwise 'and' not implemented")
+			}
+		case '|':
+			posStart := l.Position.Copy()
+			l.Advance()
+			if l.CurrentChar != nil && *l.CurrentChar == '|' {
+				l.Advance()
+				tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeLOr, nil, posStart, &l.Position))
+			} else {
+				// tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeBOr, nil, posStart, nil))
+				return []tokens.Token{}, errors.NewSyntaxNotImplementedError(posStart, &l.Position, "Bitwise 'or' not implemented")
+			}
+		case '~':
+			// tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeBNot, nil, &l.Position, nil))
+			// l.Advance()
+			posStart := l.Position.Copy()
+			l.Advance()
+			return []tokens.Token{}, errors.NewSyntaxNotImplementedError(posStart, &l.Position, "Bitwise 'not' not implemented")
 		case '(':
 			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeLparen, nil, &l.Position, nil))
 			l.Advance()
@@ -85,12 +144,7 @@ func (l *Lexer) Tokenise() ([]tokens.Token, *errors.Error) {
 
 				continue
 			} else if unicode.IsLetter(char) || char == '_' {
-				tokp, err := l.MakeIdentifierOrKeywordToken()
-				if err != nil {
-					positionStart := l.Position.Copy()
-					l.Advance()
-					return []tokens.Token{}, errors.NewInvalidNumberError(positionStart, &l.Position, err.Error())
-				}
+				tokp := l.MakeIdentifierOrKeywordToken()
 				tokenList = append(tokenList, *tokp)
 
 				continue
@@ -162,7 +216,7 @@ func (l *Lexer) MakeNumberToken() (*tokens.Token, error) {
 	return &newTok, nil
 }
 
-func (l *Lexer) MakeIdentifierOrKeywordToken() (*tokens.Token, error) {
+func (l *Lexer) MakeIdentifierOrKeywordToken() *tokens.Token {
 	idStr := ""
 	posStart := l.Position.Copy()
 
@@ -189,5 +243,5 @@ func (l *Lexer) MakeIdentifierOrKeywordToken() (*tokens.Token, error) {
 	}
 
 	newTok := tokens.NewToken(_type, idStr, posStart, &l.Position)
-	return &newTok, nil
+	return &newTok
 }

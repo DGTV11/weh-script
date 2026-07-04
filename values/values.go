@@ -27,6 +27,18 @@ func IPow(a, n int64) int64 {
 
 } //https://www.geeksforgeeks.org/dsa/fast-exponention-using-bit-manipulation/
 
+func Bool2int64(b bool) int64 {
+	// The compiler currently only optimizes this form.
+	// See issue 6011.
+	var i int64
+	if b {
+		i = 1
+	} else {
+		i = 0
+	}
+	return i
+} //https://dev.to/chigbeef_77/bool-int-but-stupid-in-go-3jb3
+
 // *BaseValue and interface
 type BaseValueInterface interface {
 	GetPosRange() position.PositionRange
@@ -38,6 +50,15 @@ type BaseValueInterface interface {
 	Mul(other BaseValueInterface) (BaseValueInterface, *errors.Error)
 	Div(other BaseValueInterface) (BaseValueInterface, *errors.Error)
 	Pow(other BaseValueInterface) (BaseValueInterface, *errors.Error)
+	Eq(other BaseValueInterface) (BaseValueInterface, *errors.Error)
+	Ne(other BaseValueInterface) (BaseValueInterface, *errors.Error)
+	Lt(other BaseValueInterface) (BaseValueInterface, *errors.Error)
+	Gt(other BaseValueInterface) (BaseValueInterface, *errors.Error)
+	Lte(other BaseValueInterface) (BaseValueInterface, *errors.Error)
+	Gte(other BaseValueInterface) (BaseValueInterface, *errors.Error)
+	LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error)
+	LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error)
+	LNot() (BaseValueInterface, *errors.Error)
 	String() string
 }
 
@@ -138,6 +159,117 @@ func (self *Integer) Pow(other BaseValueInterface) (BaseValueInterface, *errors.
 	}
 	return res, nil
 }
+func (self *Integer) Eq(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Integer:
+		res = &Integer{Value: Bool2int64(self.Value == o.Value)}
+		res.SetContext(self.GetContext())
+	case *Float:
+		res = &Integer{Value: Bool2int64(float64(self.Value) == o.Value)}
+		res.SetContext(self.GetContext())
+	}
+	return res, nil
+}
+func (self *Integer) Ne(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Integer:
+		res = &Integer{Value: Bool2int64(self.Value != o.Value)}
+		res.SetContext(self.GetContext())
+	case *Float:
+		res = &Integer{Value: Bool2int64(float64(self.Value) != o.Value)}
+		res.SetContext(self.GetContext())
+	}
+	return res, nil
+}
+func (self *Integer) Lt(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Integer:
+		res = &Integer{Value: Bool2int64(self.Value < o.Value)}
+		res.SetContext(self.GetContext())
+	case *Float:
+		res = &Integer{Value: Bool2int64(float64(self.Value) < o.Value)}
+		res.SetContext(self.GetContext())
+	}
+	return res, nil
+}
+func (self *Integer) Gt(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Integer:
+		res = &Integer{Value: Bool2int64(self.Value > o.Value)}
+		res.SetContext(self.GetContext())
+	case *Float:
+		res = &Integer{Value: Bool2int64(float64(self.Value) > o.Value)}
+		res.SetContext(self.GetContext())
+	}
+	return res, nil
+}
+func (self *Integer) Lte(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Integer:
+		res = &Integer{Value: Bool2int64(self.Value <= o.Value)}
+		res.SetContext(self.GetContext())
+	case *Float:
+		res = &Integer{Value: Bool2int64(float64(self.Value) <= o.Value)}
+		res.SetContext(self.GetContext())
+	}
+	return res, nil
+}
+func (self *Integer) Gte(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Integer:
+		res = &Integer{Value: Bool2int64(self.Value >= o.Value)}
+		res.SetContext(self.GetContext())
+	case *Float:
+		res = &Integer{Value: Bool2int64(float64(self.Value) >= o.Value)}
+		res.SetContext(self.GetContext())
+	}
+	return res, nil
+}
+func (self *Integer) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Integer:
+		res = &Integer{Value: Bool2int64((self.Value != 0) && (o.Value != 0))}
+		res.SetContext(self.GetContext())
+	case *Float:
+		res = &Integer{Value: Bool2int64((float64(self.Value) != 0.0) && (o.Value != 0.0))}
+		res.SetContext(self.GetContext())
+	}
+	return res, nil
+}
+func (self *Integer) LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Integer:
+		res = &Integer{Value: Bool2int64((self.Value != 0) || (o.Value != 0))}
+		res.SetContext(self.GetContext())
+	case *Float:
+		res = &Integer{Value: Bool2int64((float64(self.Value) != 0.0) || (o.Value != 0.0))}
+		res.SetContext(self.GetContext())
+	}
+	return res, nil
+}
+func (self *Integer) LNot() (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	res = &Integer{Value: Bool2int64(self.Value == 0)}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
 func (self *Integer) String() string {
 	return strconv.FormatInt(self.Value, 10)
 }
@@ -217,6 +349,117 @@ func (self *Float) Pow(other BaseValueInterface) (BaseValueInterface, *errors.Er
 		res = &Float{Value: math.Pow(self.Value, float64(o.Value))}
 		res.SetContext(self.GetContext())
 	}
+	return res, nil
+}
+func (self *Float) Eq(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Float:
+		res = &Integer{Value: Bool2int64(self.Value == o.Value)}
+		res.SetContext(self.GetContext())
+	case *Integer:
+		res = &Integer{Value: Bool2int64(self.Value == float64(o.Value))}
+		res.SetContext(self.GetContext())
+	}
+	return res, nil
+}
+func (self *Float) Ne(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Float:
+		res = &Integer{Value: Bool2int64(self.Value != o.Value)}
+		res.SetContext(self.GetContext())
+	case *Integer:
+		res = &Integer{Value: Bool2int64(self.Value != float64(o.Value))}
+		res.SetContext(self.GetContext())
+	}
+	return res, nil
+}
+func (self *Float) Lt(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Float:
+		res = &Integer{Value: Bool2int64(self.Value < o.Value)}
+		res.SetContext(self.GetContext())
+	case *Integer:
+		res = &Integer{Value: Bool2int64(self.Value < float64(o.Value))}
+		res.SetContext(self.GetContext())
+	}
+	return res, nil
+}
+func (self *Float) Gt(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Float:
+		res = &Integer{Value: Bool2int64(self.Value > o.Value)}
+		res.SetContext(self.GetContext())
+	case *Integer:
+		res = &Integer{Value: Bool2int64(self.Value > float64(o.Value))}
+		res.SetContext(self.GetContext())
+	}
+	return res, nil
+}
+func (self *Float) Lte(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Float:
+		res = &Integer{Value: Bool2int64(self.Value <= o.Value)}
+		res.SetContext(self.GetContext())
+	case *Integer:
+		res = &Integer{Value: Bool2int64(self.Value <= float64(o.Value))}
+		res.SetContext(self.GetContext())
+	}
+	return res, nil
+}
+func (self *Float) Gte(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Float:
+		res = &Integer{Value: Bool2int64(self.Value >= o.Value)}
+		res.SetContext(self.GetContext())
+	case *Integer:
+		res = &Integer{Value: Bool2int64(self.Value >= float64(o.Value))}
+		res.SetContext(self.GetContext())
+	}
+	return res, nil
+}
+func (self *Float) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Float:
+		res = &Integer{Value: Bool2int64((self.Value != 0.0) && (o.Value != 0.0))}
+		res.SetContext(self.GetContext())
+	case *Integer:
+		res = &Integer{Value: Bool2int64((self.Value != 0.0) && (float64(o.Value) != 0.0))}
+		res.SetContext(self.GetContext())
+	}
+	return res, nil
+}
+func (self *Float) LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Float:
+		res = &Integer{Value: Bool2int64((self.Value != 0.0) || (o.Value != 0.0))}
+		res.SetContext(self.GetContext())
+	case *Integer:
+		res = &Integer{Value: Bool2int64((self.Value != 0.0) || (float64(o.Value) != 0.0))}
+		res.SetContext(self.GetContext())
+	}
+	return res, nil
+}
+func (self *Float) LNot() (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	res = &Integer{Value: Bool2int64(self.Value == 0.0)}
+	res.SetContext(self.GetContext())
 	return res, nil
 }
 func (self *Float) String() string {

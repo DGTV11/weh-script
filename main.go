@@ -15,7 +15,11 @@ import (
 
 func SetupGlobalymbolTable() *runtime.SymbolTable {
 	GlobalSymbolTable := runtime.SymbolTable{Symbols: map[string]any{}}
+
 	GlobalSymbolTable.SetSymbol("null", &values.Integer{Value: 0})
+	GlobalSymbolTable.SetSymbol("true", &values.Integer{Value: 1})
+	GlobalSymbolTable.SetSymbol("false", &values.Integer{Value: 0})
+
 	return &GlobalSymbolTable
 }
 

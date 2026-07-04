@@ -146,6 +146,38 @@ func (p *Parser) Term() *ParseResult {
 	return p.BinOp(p.Factor, []tokens.TokenType{tokens.TokenTypeMul, tokens.TokenTypeDiv}, nil)
 }
 
+func (p *Parser) ArithExpr() *ParseResult {
+	return p.BinOp(p.Term, []tokens.TokenType{tokens.TokenTypePlus, tokens.TokenTypeMinus}, nil)
+}
+
+func (p *Parser) CompExpr() *ParseResult {
+	res := NewParseResult()
+	tok := *p.CurrentToken
+
+	if tok.Type == tokens.TokenTypeLNot {
+		res.RegisterAdvance()
+		p.Advance()
+
+		node := res.Register(p.CompExpr())
+		if res.Err != nil {
+			return res
+		}
+		return res.Success(nodes.NewUnaryOpNode(tok, node))
+	}
+
+	node := res.Register(p.BinOp(p.ArithExpr, []tokens.TokenType{tokens.TokenTypeEE, tokens.TokenTypeNE, tokens.TokenTypeLT, tokens.TokenTypeGT, tokens.TokenTypeLTE, tokens.TokenTypeGTE}, nil))
+	if res.Err != nil {
+		return res.Failure(
+			errors.NewInvalidSyntaxError(
+				tok.PosRange.Start, tok.PosRange.End,
+				"Expected integer, float, identifier, '+', '-', '(', '!'",
+			),
+		)
+	}
+
+	return res.Success(node)
+}
+
 func (p *Parser) Expr() *ParseResult {
 	res := NewParseResult()
 	tok := *p.CurrentToken
@@ -188,7 +220,7 @@ func (p *Parser) Expr() *ParseResult {
 		return res.Success(nodes.NewVariableAssignNode(varName, expr))
 	}
 
-	node := res.Register(p.BinOp(p.Term, []tokens.TokenType{tokens.TokenTypePlus, tokens.TokenTypeMinus}, nil))
+	node := res.Register(p.BinOp(p.CompExpr, []tokens.TokenType{tokens.TokenTypeLAnd, tokens.TokenTypeLOr}, nil))
 	if res.Err != nil {
 		return res.Failure(
 			errors.NewInvalidSyntaxError(
@@ -213,8 +245,44 @@ func (p *Parser) BinOp(functionL func() *ParseResult, ops []tokens.TokenType, fu
 		return res
 	}
 
-	// for p.CurrentToken.Type == tokens.TokenTypeMul || p.CurrentToken.Type == tokens.TokenTypeDiv {
 	for slices.Contains(ops, p.CurrentToken.Type) {
+		opTok := *p.CurrentToken
+		res.RegisterAdvance()
+		p.Advance()
+
+		right := res.Register(functionR())
+		if res.Err != nil {
+			return res
+		}
+
+		if left == nil {
+			left = nodes.NewBinOpNode(initialLeft, opTok, right)
+		} else {
+			left = nodes.NewBinOpNode(left, opTok, right)
+		}
+	}
+
+	if left == nil {
+		return res.Success(initialLeft)
+	}
+
+	return res.Success(left)
+}
+
+func (p *Parser) BinOpWithTokTVs(functionL func() *ParseResult, ops []tokens.TokenTV, functionR func() *ParseResult) *ParseResult {
+	if functionR == nil {
+		functionR = functionL
+	}
+
+	res := NewParseResult()
+	var left nodes.Node = nil
+
+	initialLeft := res.Register(functionL())
+	if res.Err != nil {
+		return res
+	}
+
+	for slices.Contains(ops, tokens.TokenTV{Type: p.CurrentToken.Type, Value: p.CurrentToken.Value}) {
 		opTok := *p.CurrentToken
 		res.RegisterAdvance()
 		p.Advance()

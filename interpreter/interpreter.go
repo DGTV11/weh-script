@@ -130,6 +130,22 @@ func VisitBinOpNode(node nodes.BinOpNode, ctx runtime.Context) *RuntimeResult {
 		result, error = left.Div(right)
 	case tokens.TokenTypePow:
 		result, error = left.Pow(right)
+	case tokens.TokenTypeEE:
+		result, error = left.Eq(right)
+	case tokens.TokenTypeNE:
+		result, error = left.Ne(right)
+	case tokens.TokenTypeLT:
+		result, error = left.Lt(right)
+	case tokens.TokenTypeGT:
+		result, error = left.Gt(right)
+	case tokens.TokenTypeLTE:
+		result, error = left.Lte(right)
+	case tokens.TokenTypeGTE:
+		result, error = left.Gte(right)
+	case tokens.TokenTypeLAnd:
+		result, error = left.LAnd(right)
+	case tokens.TokenTypeLOr:
+		result, error = left.LOr(right)
 	}
 
 	if error != nil {
@@ -153,6 +169,8 @@ func VisitUnaryOpNode(node nodes.UnaryOpNode, ctx runtime.Context) *RuntimeResul
 	switch node.OpTok.Type {
 	case tokens.TokenTypeMinus:
 		number, error = number.Mul(&values.Integer{Value: -1})
+	case tokens.TokenTypeLNot:
+		number, error = number.LNot()
 	}
 
 	if error != nil {

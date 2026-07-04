@@ -21,6 +21,18 @@ const (
 	TokenTypeEquals
 	TokenTypeLparen
 	TokenTypeRparen
+	TokenTypeEE
+	TokenTypeNE
+	TokenTypeLT
+	TokenTypeGT
+	TokenTypeLTE
+	TokenTypeGTE
+	TokenTypeLAnd
+	TokenTypeLOr
+	TokenTypeLNot
+	TokenTypeBAnd
+	TokenTypeBOr
+	TokenTypeBNot
 	TokenTypeEOF
 )
 
@@ -37,6 +49,18 @@ var TokenTypeName = map[TokenType]string{
 	TokenTypeEquals:     "TokenTypeEquals",
 	TokenTypeLparen:     "TokenTypeLparen",
 	TokenTypeRparen:     "TokenTypeRparen",
+	TokenTypeEE:         "TokenTypeEE",
+	TokenTypeNE:         "TokenTypeNE",
+	TokenTypeLT:         "TokenTypeLT",
+	TokenTypeGT:         "TokenTypeGT",
+	TokenTypeLTE:        "TokenTypeLTE",
+	TokenTypeGTE:        "TokenTypeGTE",
+	TokenTypeLAnd:       "TokenTypeLAnd",
+	TokenTypeLOr:        "TokenTypeLOr",
+	TokenTypeLNot:       "TokenTypeLNot",
+	TokenTypeBAnd:       "TokenTypeBAnd",
+	TokenTypeBOr:        "TokenTypeBOr",
+	TokenTypeBNot:       "TokenTypeBNot",
 	TokenTypeEOF:        "TokenTypeEOF",
 }
 
@@ -48,6 +72,11 @@ type Token struct {
 	Type     TokenType
 	Value    any
 	PosRange position.PositionRange
+}
+
+type TokenTV struct {
+	Type  TokenType
+	Value any
 }
 
 func NewToken(_type TokenType, value any, posStartIn *position.Position, posEndIn *position.Position) Token {

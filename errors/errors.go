@@ -77,8 +77,16 @@ func NewInvalidNumberError(positionStart *position.Position, positionEnd *positi
 	return &Error{PositionStart: positionStart, PositionEnd: positionEnd, Name: "Invalid Number", Details: details}
 }
 
+func NewExpectedCharError(positionStart *position.Position, positionEnd *position.Position, details string) *Error {
+	return &Error{PositionStart: positionStart, PositionEnd: positionEnd, Name: "Expected Character", Details: details}
+}
+
 func NewInvalidSyntaxError(positionStart *position.Position, positionEnd *position.Position, details string) *Error {
 	return &Error{PositionStart: positionStart, PositionEnd: positionEnd, Name: "Invalid Syntax", Details: details}
+}
+
+func NewSyntaxNotImplementedError(positionStart *position.Position, positionEnd *position.Position, details string) *Error {
+	return &Error{PositionStart: positionStart, PositionEnd: positionEnd, Name: "Syntax Not Implemented", Details: details}
 }
 
 //*Runtime errors
