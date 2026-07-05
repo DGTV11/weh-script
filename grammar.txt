@@ -16,7 +16,14 @@ power       : atom ((Pow) factor)*
 atom        : Int|Float|Identifier
             : LPAREN expr RPAREN
             : if-expr
+            : for-expr
+            : while-expr
 
 if-expr     : Keyword:if expr Keyword:then expr
               (Keyword:elif expr Keyword:then expr)*
               (Keyword:else expr)?
+
+for-expr    : Keyword:for Identifier Equals expr Keyword:to expr
+              (Keyword:step expr)? Keyword:then expr
+
+while-expr  : Keyword:while expr Keyword:then expr

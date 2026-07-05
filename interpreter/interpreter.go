@@ -52,6 +52,10 @@ func Visit(node nodes.Node, ctx runtime.Context) *RuntimeResult {
 		return VisitUnaryOpNode(node.(nodes.UnaryOpNode), ctx)
 	case nodes.IfNode:
 		return VisitIfNode(node.(nodes.IfNode), ctx)
+	case nodes.ForNode:
+		return VisitForNode(node.(nodes.ForNode), ctx)
+	case nodes.WhileNode:
+		return VisitWhileNode(node.(nodes.WhileNode), ctx)
 	default:
 		posRange := node.GetPosRange()
 		return NewRuntimeResult().Failure(errors.NewNotImplementedError(posRange.Start, posRange.End, fmt.Sprintf("No Visit function defined for node type %T", n), ctx))
@@ -179,7 +183,7 @@ func VisitUnaryOpNode(node nodes.UnaryOpNode, ctx runtime.Context) *RuntimeResul
 		return res.Failure(error)
 	}
 	number.SetContext(ctx)
-	number.SetValuePos(number.GetPosRange())
+	number.SetValuePos(node.GetPosRange())
 	return res.Success(number)
 }
 
@@ -208,5 +212,89 @@ func VisitIfNode(node nodes.IfNode, ctx runtime.Context) *RuntimeResult {
 		return res.Success(elseValue)
 	}
 
-	return res.Success(nil)
+	// return res.Success(nil)
+	return res.Success(&values.Integer{Value: 0})
+}
+
+func VisitForNode(node nodes.ForNode, ctx runtime.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	startValue := res.Register(Visit(node.StartValueNode, ctx))
+	if res.Err != nil {
+		return res
+	}
+
+	stopValue := res.Register(Visit(node.StopValueNode, ctx))
+	if res.Err != nil {
+		return res
+	}
+
+	var stepValue values.BaseValueInterface = &values.Integer{Value: 1}
+	if node.StepValueNode != nil {
+		stepValue = res.Register(Visit(node.StepValueNode, ctx))
+		if res.Err != nil {
+			return res
+		}
+	}
+
+	i := startValue.Copy()
+
+	condRes, err := stepValue.Gte(&values.Integer{Value: 0})
+	if err != nil {
+		return res.Failure(err)
+	}
+
+	var cond func() (values.BaseValueInterface, *errors.Error)
+	if condRes.IsTrue() {
+		cond = func() (values.BaseValueInterface, *errors.Error) { return i.Lt(stopValue) }
+	} else {
+		cond = func() (values.BaseValueInterface, *errors.Error) { return i.Gt(stopValue) }
+	}
+
+	condRes, err = cond()
+	if err != nil {
+		return res.Failure(err)
+	}
+
+	for condRes.IsTrue() {
+		ctx.SymTable.SetSymbol(node.VarNameTok.Value.(string), i)
+		i, err = i.Add(stepValue)
+		if err != nil {
+			return res.Failure(err)
+		}
+
+		res.Register(Visit(node.BodyNode, ctx))
+		if res.Err != nil {
+			return res
+		}
+
+		condRes, err = cond()
+		if err != nil {
+			return res.Failure(err)
+		}
+	}
+
+	// return res.Success(nil)
+	return res.Success(&values.Integer{Value: 0})
+}
+
+func VisitWhileNode(node nodes.WhileNode, ctx runtime.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	for {
+		condition := res.Register(Visit(node.CondNode, ctx))
+		if res.Err != nil {
+			return res
+		}
+		if !condition.IsTrue() {
+			break
+		}
+		res.Register(Visit(node.BodyNode, ctx))
+		if res.Err != nil {
+			return res
+		}
+	}
+
+	// return res.Success(nil)
+	return res.Success(&values.Integer{Value: 0})
 }

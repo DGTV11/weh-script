@@ -125,7 +125,8 @@ func NewIfNode(cases []IfCase, elseCase Node) IfNode {
 	var lastNode Node
 
 	if elseCase == nil {
-		lastNode = cases[len(cases)-1].Cond
+		// lastNode = cases[len(cases)-1].Cond
+		lastNode = cases[len(cases)-1].Expr
 	} else {
 		lastNode = elseCase
 	}
@@ -139,4 +140,46 @@ func NewIfNode(cases []IfCase, elseCase Node) IfNode {
 
 func (n IfNode) String() string {
 	return fmt.Sprintf("(IF NODE)") //TODO
+}
+
+type ForNode struct {
+	BaseNode
+	VarNameTok     tokens.Token
+	StartValueNode Node
+	StopValueNode  Node
+	StepValueNode  Node
+	BodyNode       Node
+}
+
+func NewForNode(varNameTok tokens.Token, startValueNode Node, stopValueNode Node, stepValueNode Node, bodyNode Node) ForNode {
+	return ForNode{
+		VarNameTok:     varNameTok,
+		StartValueNode: startValueNode,
+		StopValueNode:  stopValueNode,
+		StepValueNode:  stepValueNode,
+		BodyNode:       bodyNode,
+		BaseNode:       BaseNode{PosRange: position.PositionRange{Start: varNameTok.PosRange.Start, End: bodyNode.GetPosRange().End}},
+	}
+}
+
+func (n ForNode) String() string {
+	return fmt.Sprintf("(FOR NODE)") //TODO
+}
+
+type WhileNode struct {
+	BaseNode
+	CondNode Node
+	BodyNode Node
+}
+
+func NewWhileNode(condNode Node, bodyNode Node) WhileNode {
+	return WhileNode{
+		CondNode: condNode,
+		BodyNode: bodyNode,
+		BaseNode: BaseNode{PosRange: position.PositionRange{Start: condNode.GetPosRange().Start, End: bodyNode.GetPosRange().End}},
+	}
+}
+
+func (n WhileNode) String() string {
+	return fmt.Sprintf("(WHILE NODE)") //TODO
 }

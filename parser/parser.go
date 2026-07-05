@@ -67,6 +67,8 @@ func (p *Parser) Advance() *tokens.Token {
 	return p.CurrentToken
 }
 
+//*Main Parser
+
 func (p *Parser) Parse() *ParseResult {
 	res := p.Expr()
 
@@ -81,7 +83,7 @@ func (p *Parser) Parse() *ParseResult {
 	return res
 }
 
-func (p *Parser) IfExpr() *ParseResult { //TODO: 3:18
+func (p *Parser) IfExpr() *ParseResult {
 	res := NewParseResult()
 	var cases []nodes.IfCase
 	var elseCase nodes.Node = nil
@@ -155,6 +157,141 @@ func (p *Parser) IfExpr() *ParseResult { //TODO: 3:18
 	return res.Success(nodes.NewIfNode(cases, elseCase))
 }
 
+func (p *Parser) ForExpr() *ParseResult {
+	res := NewParseResult()
+
+	if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, "for") {
+		return res.Failure(
+			errors.NewInvalidSyntaxError(
+				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+				"Expected 'if'",
+			),
+		)
+	}
+	res.RegisterAdvance()
+	p.Advance()
+
+	if p.CurrentToken.Type != tokens.TokenTypeIdentifier {
+		return res.Failure(
+			errors.NewInvalidSyntaxError(
+				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+				"Expected identifier",
+			),
+		)
+	}
+	varName := *p.CurrentToken
+	res.RegisterAdvance()
+	p.Advance()
+
+	if p.CurrentToken.Type != tokens.TokenTypeEquals {
+		return res.Failure(
+			errors.NewInvalidSyntaxError(
+				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+				"Expected '='",
+			),
+		)
+	}
+	res.RegisterAdvance()
+	p.Advance()
+
+	startValue := res.Register(p.Expr())
+	if res.Err != nil {
+		return res
+	}
+
+	if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, "to") {
+		return res.Failure(
+			errors.NewInvalidSyntaxError(
+				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+				"Expected 'to'",
+			),
+		)
+	}
+	res.RegisterAdvance()
+	p.Advance()
+
+	stopValue := res.Register(p.Expr())
+	if res.Err != nil {
+		return res
+	}
+
+	var stepValue nodes.Node = nil
+	if p.CurrentToken.Matches(tokens.TokenTypeKeyword, "step") {
+		res.RegisterAdvance()
+		p.Advance()
+
+		stepValue = res.Register(p.Expr())
+		if res.Err != nil {
+			return res
+		}
+	}
+
+	if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, "then") {
+		return res.Failure(
+			errors.NewInvalidSyntaxError(
+				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+				"Expected 'then'",
+			),
+		)
+	}
+	res.RegisterAdvance()
+	p.Advance()
+
+	body := res.Register(p.Expr())
+	if res.Err != nil {
+		return res
+	}
+
+	return res.Success(nodes.NewForNode(
+		varName,
+		startValue,
+		stopValue,
+		stepValue,
+		body,
+	))
+}
+
+func (p *Parser) WhileExpr() *ParseResult {
+	res := NewParseResult()
+
+	if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, "while") {
+		return res.Failure(
+			errors.NewInvalidSyntaxError(
+				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+				"Expected 'while'",
+			),
+		)
+	}
+	res.RegisterAdvance()
+	p.Advance()
+
+	condition := res.Register(p.Expr())
+	if res.Err != nil {
+		return res
+	}
+
+	if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, "then") {
+		return res.Failure(
+			errors.NewInvalidSyntaxError(
+				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+				"Expected 'then'",
+			),
+		)
+	}
+	res.RegisterAdvance()
+	p.Advance()
+
+	body := res.Register(p.Expr())
+	if res.Err != nil {
+		return res
+	}
+
+	return res.Success(nodes.NewWhileNode(
+		condition,
+		body,
+	))
+}
+
 func (p *Parser) Atom() *ParseResult {
 	res := NewParseResult()
 	tok := *p.CurrentToken
@@ -191,6 +328,18 @@ func (p *Parser) Atom() *ParseResult {
 			return res
 		}
 		return res.Success(ifExpr)
+	} else if tok.Matches(tokens.TokenTypeKeyword, "for") {
+		forExpr := res.Register(p.ForExpr())
+		if res.Err != nil {
+			return res
+		}
+		return res.Success(forExpr)
+	} else if tok.Matches(tokens.TokenTypeKeyword, "while") {
+		whileExpr := res.Register(p.WhileExpr())
+		if res.Err != nil {
+			return res
+		}
+		return res.Success(whileExpr)
 	}
 
 	return res.Failure(
@@ -311,6 +460,8 @@ func (p *Parser) Expr() *ParseResult {
 	}
 	return res.Success(node)
 }
+
+//*BinOp helpers
 
 func (p *Parser) BinOp(functionL func() *ParseResult, ops []tokens.TokenType, functionR func() *ParseResult) *ParseResult {
 	if functionR == nil {

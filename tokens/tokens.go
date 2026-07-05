@@ -70,6 +70,10 @@ var Keywords = []string{
 	"elif",
 	"else",
 	"then",
+	"for",
+	"to",
+	"step",
+	"while",
 }
 
 type Token struct {
