@@ -2,7 +2,7 @@
   - STOPPED AT: https://www.youtube.com/watch?v=r46EONXC1i0&list=PLZQftyCk7_SdoVexSmwy_tBgs7P0b97yD&index=9
 2) finish up good goods 
   - add OOP? https://craftinginterpreters.com/the-lox-language.html#classes
-  - add AST optimiser?
-2) make bytecode compiler + reg-based VM
+  - add AST optimiser? (+also add type inference)
+2) make bytecode compiler + reg-based VM (give option to choose between AST tree-walk interpreter and bytecode interpreter, especially when running .weh script)
   - make language statically typed?
 3) make language runtime thingy (which can be compiled to executable) or stick with bytecode files
