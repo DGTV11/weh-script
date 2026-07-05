@@ -11,13 +11,16 @@ term        : factor ((Mul|Div) factor)*
 factor      : (Plus|Minus) factor
             : power
             
-power       : atom ((Pow) factor)*
+power       : call ((Pow) factor)*
+
+call        : atom (Lparen (expr (Comma expr)*)? Rparen)?
             
 atom        : Int|Float|Identifier
-            : LPAREN expr RPAREN
+            : Lparen expr Rparen
             : if-expr
             : for-expr
             : while-expr
+            : func-def
 
 if-expr     : Keyword:if expr Keyword:then expr
               (Keyword:elif expr Keyword:then expr)*
@@ -27,3 +30,7 @@ for-expr    : Keyword:for Identifier Equals expr Keyword:to expr
               (Keyword:step expr)? Keyword:then expr
 
 while-expr  : Keyword:while expr Keyword:then expr
+
+func-def    : Keyword:func Identifier?
+              Lparen (Identifier (Comma Identifier)*)? Rparen
+              Arrow expr

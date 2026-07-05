@@ -183,3 +183,59 @@ func NewWhileNode(condNode Node, bodyNode Node) WhileNode {
 func (n WhileNode) String() string {
 	return fmt.Sprintf("(WHILE NODE)") //TODO
 }
+
+type FuncDefNode struct {
+	BaseNode
+	VarNameTok  *tokens.Token
+	ArgNameToks []tokens.Token
+	BodyNode    Node
+}
+
+func NewFuncDefNode(varNameTok *tokens.Token, argNameToks []tokens.Token, bodyNode Node) FuncDefNode {
+	var posStart *position.Position
+
+	if varNameTok != nil {
+		posStart = varNameTok.PosRange.Start
+	} else if len(argNameToks) > 0 {
+		posStart = argNameToks[0].PosRange.Start
+	} else {
+		posStart = bodyNode.GetPosRange().Start
+	}
+
+	return FuncDefNode{
+		VarNameTok:  varNameTok,
+		ArgNameToks: argNameToks,
+		BodyNode:    bodyNode,
+		BaseNode:    BaseNode{PosRange: position.PositionRange{Start: posStart, End: bodyNode.GetPosRange().End}},
+	}
+}
+
+func (n FuncDefNode) String() string {
+	return fmt.Sprintf("(FUNC DEF NODE)") //TODO
+}
+
+type CallNode struct {
+	BaseNode
+	NodeToCall Node
+	ArgNodes   []Node
+}
+
+func NewCallNode(nodeToCall Node, argNodes []Node) CallNode {
+	var lastNode Node
+
+	if len(argNodes) > 0 {
+		lastNode = argNodes[len(argNodes)-1]
+	} else {
+		lastNode = nodeToCall
+	}
+
+	return CallNode{
+		NodeToCall: nodeToCall,
+		ArgNodes:   argNodes,
+		BaseNode:   BaseNode{PosRange: position.PositionRange{Start: nodeToCall.GetPosRange().Start, End: lastNode.GetPosRange().End}},
+	}
+}
+
+func (n CallNode) String() string {
+	return fmt.Sprintf("(CALL NODE)") //TODO
+}

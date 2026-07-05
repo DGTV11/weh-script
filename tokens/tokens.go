@@ -33,6 +33,8 @@ const (
 	TokenTypeBAnd
 	TokenTypeBOr
 	TokenTypeBNot
+	TokenTypeComma
+	TokenTypeArrow
 	TokenTypeEOF
 )
 
@@ -61,6 +63,8 @@ var TokenTypeName = map[TokenType]string{
 	TokenTypeBAnd:       "TokenTypeBAnd",
 	TokenTypeBOr:        "TokenTypeBOr",
 	TokenTypeBNot:       "TokenTypeBNot",
+	TokenTypeComma:      "TokenTypeComma",
+	TokenTypeArrow:      "TokenTypeArrow",
 	TokenTypeEOF:        "TokenTypeEOF",
 }
 
@@ -74,6 +78,7 @@ var Keywords = []string{
 	"to",
 	"step",
 	"while",
+	"func",
 }
 
 type Token struct {

@@ -79,6 +79,9 @@ func (l *Lexer) Tokenise() ([]tokens.Token, *errors.Error) {
 			if l.CurrentChar != nil && *l.CurrentChar == '=' {
 				l.Advance()
 				tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeEE, nil, posStart, &l.Position))
+			} else if l.CurrentChar != nil && *l.CurrentChar == '>' {
+				l.Advance()
+				tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeArrow, nil, posStart, &l.Position))
 			} else {
 				tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeEquals, nil, posStart, nil))
 			}
@@ -131,6 +134,9 @@ func (l *Lexer) Tokenise() ([]tokens.Token, *errors.Error) {
 			l.Advance()
 		case ')':
 			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeRparen, nil, &l.Position, nil))
+			l.Advance()
+		case ',':
+			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeComma, nil, &l.Position, nil))
 			l.Advance()
 		default:
 			if unicode.IsDigit(char) {

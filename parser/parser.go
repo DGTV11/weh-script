@@ -251,6 +251,12 @@ func (p *Parser) ForExpr() *ParseResult {
 	))
 }
 
+func (p *Parser) FuncDef() *ParseResult {
+	res := NewParseResult()
+	//TODO: https://www.youtube.com/watch?v=WfZgMIkVW1s&list=PLZQftyCk7_SdoVexSmwy_tBgs7P0b97yD&index=9
+	//From 6:46
+}
+
 func (p *Parser) WhileExpr() *ParseResult {
 	res := NewParseResult()
 
@@ -340,6 +346,12 @@ func (p *Parser) Atom() *ParseResult {
 			return res
 		}
 		return res.Success(whileExpr)
+	} else if tok.Matches(tokens.TokenTypeKeyword, "func") {
+		funcDef := res.Register(p.FuncDef())
+		if res.Err != nil {
+			return res
+		}
+		return res.Success(funcDef)
 	}
 
 	return res.Failure(
