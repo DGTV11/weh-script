@@ -110,3 +110,33 @@ func NewUnaryOpNode(opTok tokens.Token, nodeValue Node) UnaryOpNode {
 func (n UnaryOpNode) String() string {
 	return fmt.Sprintf("(%v, %v)", n.OpTok, n.NodeValue)
 }
+
+type IfCase struct {
+	Cond Node
+	Expr Node
+}
+type IfNode struct {
+	BaseNode
+	Cases    []IfCase
+	ElseCase Node
+}
+
+func NewIfNode(cases []IfCase, elseCase Node) IfNode {
+	var lastNode Node
+
+	if elseCase == nil {
+		lastNode = cases[len(cases)-1].Cond
+	} else {
+		lastNode = elseCase
+	}
+
+	return IfNode{
+		Cases:    cases,
+		ElseCase: elseCase,
+		BaseNode: BaseNode{PosRange: position.PositionRange{Start: cases[0].Cond.GetPosRange().Start, End: lastNode.GetPosRange().End}},
+	}
+}
+
+func (n IfNode) String() string {
+	return fmt.Sprintf("(IF NODE)") //TODO
+}

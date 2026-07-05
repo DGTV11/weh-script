@@ -1,4 +1,4 @@
-expr        : KEYWORD:var IDENTIFIER Equals expr
+expr        : Keyword:var IDENTIFIER Equals expr
             : comp-expr ((LAnd|LOr) comp-expr)*
 
 comp-expr   : LNot comp-expr
@@ -15,3 +15,8 @@ power       : atom ((Pow) factor)*
             
 atom        : Int|Float|Identifier
             : LPAREN expr RPAREN
+            : if-expr
+
+if-expr     : Keyword:if expr Keyword:then expr
+              (Keyword:elif expr Keyword:then expr)*
+              (Keyword:else expr)?

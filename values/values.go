@@ -59,6 +59,8 @@ type BaseValueInterface interface {
 	LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error)
 	LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error)
 	LNot() (BaseValueInterface, *errors.Error)
+	Copy() BaseValueInterface
+	IsTrue() bool
 	String() string
 }
 
@@ -238,42 +240,31 @@ func (self *Integer) Gte(other BaseValueInterface) (BaseValueInterface, *errors.
 	return res, nil
 }
 func (self *Integer) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
-	var res BaseValueInterface = nil
-
-	switch o := other.(type) {
-	case *Integer:
-		res = &Integer{Value: Bool2int64((self.Value != 0) && (o.Value != 0))}
-		res.SetContext(self.GetContext())
-	case *Float:
-		res = &Integer{Value: Bool2int64((float64(self.Value) != 0.0) && (o.Value != 0.0))}
-		res.SetContext(self.GetContext())
-	}
+	res := &Integer{Value: Bool2int64(self.IsTrue() && other.IsTrue())}
 	return res, nil
 }
 func (self *Integer) LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
-	var res BaseValueInterface = nil
-
-	switch o := other.(type) {
-	case *Integer:
-		res = &Integer{Value: Bool2int64((self.Value != 0) || (o.Value != 0))}
-		res.SetContext(self.GetContext())
-	case *Float:
-		res = &Integer{Value: Bool2int64((float64(self.Value) != 0.0) || (o.Value != 0.0))}
-		res.SetContext(self.GetContext())
-	}
+	res := &Integer{Value: Bool2int64(self.IsTrue() || other.IsTrue())}
 	return res, nil
 }
 func (self *Integer) LNot() (BaseValueInterface, *errors.Error) {
-	var res BaseValueInterface = nil
-
-	res = &Integer{Value: Bool2int64(self.Value == 0)}
-	res.SetContext(self.GetContext())
+	res := &Integer{Value: Bool2int64(!self.IsTrue())}
 	return res, nil
+}
+func (self *Integer) Copy() BaseValueInterface {
+	copy := &Integer{Value: self.Value}
+	copy.SetValuePos(self.GetPosRange())
+	copy.SetContext(self.GetContext())
+	return copy
+}
+func (self *Integer) IsTrue() bool {
+	return self.Value != 0
 }
 func (self *Integer) String() string {
 	return strconv.FormatInt(self.Value, 10)
 }
 
+// *Float
 type Float struct {
 	BaseValue
 	Value float64
@@ -430,37 +421,25 @@ func (self *Float) Gte(other BaseValueInterface) (BaseValueInterface, *errors.Er
 	return res, nil
 }
 func (self *Float) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
-	var res BaseValueInterface = nil
-
-	switch o := other.(type) {
-	case *Float:
-		res = &Integer{Value: Bool2int64((self.Value != 0.0) && (o.Value != 0.0))}
-		res.SetContext(self.GetContext())
-	case *Integer:
-		res = &Integer{Value: Bool2int64((self.Value != 0.0) && (float64(o.Value) != 0.0))}
-		res.SetContext(self.GetContext())
-	}
+	res := &Integer{Value: Bool2int64(self.IsTrue() && other.IsTrue())}
 	return res, nil
 }
 func (self *Float) LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
-	var res BaseValueInterface = nil
-
-	switch o := other.(type) {
-	case *Float:
-		res = &Integer{Value: Bool2int64((self.Value != 0.0) || (o.Value != 0.0))}
-		res.SetContext(self.GetContext())
-	case *Integer:
-		res = &Integer{Value: Bool2int64((self.Value != 0.0) || (float64(o.Value) != 0.0))}
-		res.SetContext(self.GetContext())
-	}
+	res := &Integer{Value: Bool2int64(self.IsTrue() || other.IsTrue())}
 	return res, nil
 }
 func (self *Float) LNot() (BaseValueInterface, *errors.Error) {
-	var res BaseValueInterface = nil
-
-	res = &Integer{Value: Bool2int64(self.Value == 0.0)}
-	res.SetContext(self.GetContext())
+	res := &Integer{Value: Bool2int64(!self.IsTrue())}
 	return res, nil
+}
+func (self *Float) Copy() BaseValueInterface {
+	copy := &Float{Value: self.Value}
+	copy.SetValuePos(self.GetPosRange())
+	copy.SetContext(self.GetContext())
+	return copy
+}
+func (self *Float) IsTrue() bool {
+	return self.Value != 0.0
 }
 func (self *Float) String() string {
 	return strconv.FormatFloat(self.Value, 'g', -1, 64)

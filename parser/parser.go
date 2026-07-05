@@ -81,6 +81,80 @@ func (p *Parser) Parse() *ParseResult {
 	return res
 }
 
+func (p *Parser) IfExpr() *ParseResult { //TODO: 3:18
+	res := NewParseResult()
+	var cases []nodes.IfCase
+	var elseCase nodes.Node = nil
+
+	if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, "if") {
+		return res.Failure(
+			errors.NewInvalidSyntaxError(
+				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+				"Expected 'if'",
+			),
+		)
+	}
+	res.RegisterAdvance()
+	p.Advance()
+	condition := res.Register(p.Expr())
+	if res.Err != nil {
+		return res
+	}
+
+	if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, "then") {
+		return res.Failure(
+			errors.NewInvalidSyntaxError(
+				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+				"Expected 'then'",
+			),
+		)
+	}
+	res.RegisterAdvance()
+	p.Advance()
+	expr := res.Register(p.Expr())
+	if res.Err != nil {
+		return res
+	}
+
+	cases = append(cases, nodes.IfCase{Cond: condition, Expr: expr})
+
+	for p.CurrentToken.Matches(tokens.TokenTypeKeyword, "elif") {
+		res.RegisterAdvance()
+		p.Advance()
+		condition := res.Register(p.Expr())
+		if res.Err != nil {
+			return res
+		}
+
+		if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, "then") {
+			return res.Failure(
+				errors.NewInvalidSyntaxError(
+					p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+					"Expected 'then'",
+				),
+			)
+		}
+		res.RegisterAdvance()
+		p.Advance()
+		expr := res.Register(p.Expr())
+		if res.Err != nil {
+			return res
+		}
+
+		cases = append(cases, nodes.IfCase{Cond: condition, Expr: expr})
+	}
+
+	if p.CurrentToken.Matches(tokens.TokenTypeKeyword, "else") {
+		res.RegisterAdvance()
+		p.Advance()
+		elseCase = res.Register(p.Expr())
+		if res.Err != nil {
+			return res
+		}
+	}
+	return res.Success(nodes.NewIfNode(cases, elseCase))
+}
+
 func (p *Parser) Atom() *ParseResult {
 	res := NewParseResult()
 	tok := *p.CurrentToken
@@ -111,6 +185,12 @@ func (p *Parser) Atom() *ParseResult {
 				"Expected ')'",
 			),
 		)
+	} else if tok.Matches(tokens.TokenTypeKeyword, "if") {
+		ifExpr := res.Register(p.IfExpr())
+		if res.Err != nil {
+			return res
+		}
+		return res.Success(ifExpr)
 	}
 
 	return res.Failure(

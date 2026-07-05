@@ -66,6 +66,10 @@ var TokenTypeName = map[TokenType]string{
 
 var Keywords = []string{
 	"var",
+	"if",
+	"elif",
+	"else",
+	"then",
 }
 
 type Token struct {

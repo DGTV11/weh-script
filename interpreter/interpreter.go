@@ -50,6 +50,8 @@ func Visit(node nodes.Node, ctx runtime.Context) *RuntimeResult {
 		return VisitBinOpNode(node.(nodes.BinOpNode), ctx)
 	case nodes.UnaryOpNode:
 		return VisitUnaryOpNode(node.(nodes.UnaryOpNode), ctx)
+	case nodes.IfNode:
+		return VisitIfNode(node.(nodes.IfNode), ctx)
 	default:
 		posRange := node.GetPosRange()
 		return NewRuntimeResult().Failure(errors.NewNotImplementedError(posRange.Start, posRange.End, fmt.Sprintf("No Visit function defined for node type %T", n), ctx))
@@ -179,4 +181,32 @@ func VisitUnaryOpNode(node nodes.UnaryOpNode, ctx runtime.Context) *RuntimeResul
 	number.SetContext(ctx)
 	number.SetValuePos(number.GetPosRange())
 	return res.Success(number)
+}
+
+func VisitIfNode(node nodes.IfNode, ctx runtime.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	for i := 0; i < len(node.Cases); i++ {
+		conditionValue := res.Register(Visit(node.Cases[i].Cond, ctx))
+		if res.Err != nil {
+			return res
+		}
+
+		if conditionValue.IsTrue() {
+			exprValue := res.Register(Visit(node.Cases[i].Expr, ctx))
+			if res.Err != nil {
+				return res
+			}
+			return res.Success(exprValue)
+		}
+	}
+	if node.ElseCase != nil {
+		elseValue := res.Register(Visit(node.ElseCase, ctx))
+		if res.Err != nil {
+			return res
+		}
+		return res.Success(elseValue)
+	}
+
+	return res.Success(nil)
 }

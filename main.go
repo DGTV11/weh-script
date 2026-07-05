@@ -64,7 +64,7 @@ func main() {
 
 		if err != nil {
 			fmt.Println(err)
-		} else {
+		} else if res != nil {
 			fmt.Println(res)
 		}
 	}
