@@ -253,8 +253,43 @@ func (p *Parser) ForExpr() *ParseResult {
 
 func (p *Parser) FuncDef() *ParseResult {
 	res := NewParseResult()
-	//TODO: https://www.youtube.com/watch?v=WfZgMIkVW1s&list=PLZQftyCk7_SdoVexSmwy_tBgs7P0b97yD&index=9
-	//From 6:46
+
+	if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, "func") {
+		return res.Failure(
+			errors.NewInvalidSyntaxError(
+				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+				"Expected 'func'",
+			),
+		)
+	}
+	res.RegisterAdvance()
+	p.Advance()
+
+	var varNameTok *tokens.Token
+	if p.CurrentToken.Type == tokens.TokenTypeIdentifier {
+		varNameTok = p.CurrentToken
+		res.RegisterAdvance()
+		p.Advance()
+		if p.CurrentToken.Type != tokens.TokenTypeLparen {
+			return res.Failure(
+				errors.NewInvalidSyntaxError(
+					p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+					"Expected '('",
+				),
+			)
+		}
+	} else {
+		varNameTok = nil
+		if p.CurrentToken.Type != tokens.TokenTypeLparen {
+			return res.Failure(
+				errors.NewInvalidSyntaxError(
+					p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+					"Expected identifier or '('",
+				),
+			)
+		}
+	}
+	//TODO: https://youtu.be/WfZgMIkVW1s?si=QwB7ckzYKCdj1ZFa&t=458
 }
 
 func (p *Parser) WhileExpr() *ParseResult {
