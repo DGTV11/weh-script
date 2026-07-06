@@ -289,7 +289,76 @@ func (p *Parser) FuncDef() *ParseResult {
 			)
 		}
 	}
-	//TODO: https://youtu.be/WfZgMIkVW1s?si=QwB7ckzYKCdj1ZFa&t=458
+
+	res.RegisterAdvance()
+	p.Advance()
+	var argNameToks []tokens.Token
+
+	if p.CurrentToken.Type == tokens.TokenTypeIdentifier {
+		argNameToks = append(argNameToks, *p.CurrentToken)
+		res.RegisterAdvance()
+		p.Advance()
+
+		for p.CurrentToken.Type == tokens.TokenTypeComma {
+			res.RegisterAdvance()
+			p.Advance()
+
+			if p.CurrentToken.Type != tokens.TokenTypeIdentifier {
+				return res.Failure(
+					errors.NewInvalidSyntaxError(
+						p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+						"Expected identifier",
+					),
+				)
+			}
+
+			argNameToks = append(argNameToks, *p.CurrentToken)
+			res.RegisterAdvance()
+			p.Advance()
+		}
+
+		if p.CurrentToken.Type != tokens.TokenTypeRparen {
+			return res.Failure(
+				errors.NewInvalidSyntaxError(
+					p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+					"Expected ',' or ')'",
+				),
+			)
+		}
+	} else {
+		if p.CurrentToken.Type != tokens.TokenTypeRparen {
+			return res.Failure(
+				errors.NewInvalidSyntaxError(
+					p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+					"Expected identifier or ')'",
+				),
+			)
+		}
+	}
+
+	res.RegisterAdvance()
+	p.Advance()
+
+	if p.CurrentToken.Type != tokens.TokenTypeArrow {
+		return res.Failure(
+			errors.NewInvalidSyntaxError(
+				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+				"Expected '=>'",
+			),
+		)
+	}
+
+	res.RegisterAdvance()
+	p.Advance()
+
+	body := res.Register(p.Expr())
+	if res.Err != nil {
+		return res
+	}
+
+	return res.Success(
+		nodes.NewFuncDefNode(varNameTok, argNameToks, body),
+	)
 }
 
 func (p *Parser) WhileExpr() *ParseResult {
@@ -392,13 +461,66 @@ func (p *Parser) Atom() *ParseResult {
 	return res.Failure(
 		errors.NewInvalidSyntaxError(
 			tok.PosRange.Start, tok.PosRange.End,
-			"Expected integer, float, identifier, '+', '-' or '('",
+			"Expected integer, float, identifier, '+', '-' or '(', 'if', 'for', 'while', 'func'",
 		),
 	)
 }
 
 func (p *Parser) Power() *ParseResult {
-	return p.BinOp(p.Atom, []tokens.TokenType{tokens.TokenTypePow}, p.Factor)
+	return p.BinOp(p.Call, []tokens.TokenType{tokens.TokenTypePow}, p.Factor)
+}
+
+func (p *Parser) Call() *ParseResult {
+	res := NewParseResult()
+	atom := res.Register(p.Atom())
+	if res.Err != nil {
+		return res
+	}
+
+	if p.CurrentToken.Type == tokens.TokenTypeLparen {
+		res.RegisterAdvance()
+		p.Advance()
+		var argNodes []nodes.Node
+
+		if p.CurrentToken.Type == tokens.TokenTypeRparen {
+			res.RegisterAdvance()
+			p.Advance()
+		} else {
+			argNodes = append(argNodes, res.Register(p.Expr()))
+			if res.Err != nil {
+				return res.Failure(
+					errors.NewInvalidSyntaxError(
+						p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+						"Expected ')', 'var', 'if', 'for', 'while', 'func', integer, float, identifier, '+', '-' or '('",
+					),
+				)
+			}
+
+			for p.CurrentToken.Type == tokens.TokenTypeComma {
+				res.RegisterAdvance()
+				p.Advance()
+
+				argNodes = append(argNodes, res.Register(p.Expr()))
+				if res.Err != nil {
+					return res
+				}
+			}
+
+			if p.CurrentToken.Type != tokens.TokenTypeRparen {
+				return res.Failure(
+					errors.NewInvalidSyntaxError(
+						p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+						"Expected ',' or ')'",
+					),
+				)
+			}
+
+			res.RegisterAdvance()
+			p.Advance()
+		}
+		return res.Success(nodes.NewCallNode(atom, argNodes))
+	}
+	return res.Success(atom)
 }
 
 func (p *Parser) Factor() *ParseResult {
@@ -501,7 +623,7 @@ func (p *Parser) Expr() *ParseResult {
 		return res.Failure(
 			errors.NewInvalidSyntaxError(
 				tok.PosRange.Start, tok.PosRange.End,
-				"Expected 'var', integer, float, identifier, '+', '-' or '('",
+				"Expected 'var', 'if', 'for', 'while', 'func', integer, float, identifier, '+', '-' or '('",
 			),
 		)
 	}

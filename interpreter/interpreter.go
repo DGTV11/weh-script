@@ -56,6 +56,10 @@ func Visit(node nodes.Node, ctx runtime.Context) *RuntimeResult {
 		return VisitForNode(node.(nodes.ForNode), ctx)
 	case nodes.WhileNode:
 		return VisitWhileNode(node.(nodes.WhileNode), ctx)
+	case nodes.FuncDefNode:
+		return VisitFuncDefNode(node.(nodes.FuncDefNode), ctx)
+	case nodes.CallNode:
+		return VisitCallNode(node.(nodes.CallNode), ctx)
 	default:
 		posRange := node.GetPosRange()
 		return NewRuntimeResult().Failure(errors.NewNotImplementedError(posRange.Start, posRange.End, fmt.Sprintf("No Visit function defined for node type %T", n), ctx))
@@ -297,4 +301,79 @@ func VisitWhileNode(node nodes.WhileNode, ctx runtime.Context) *RuntimeResult {
 
 	// return res.Success(nil)
 	return res.Success(&values.Integer{Value: 0})
+}
+
+func VisitFuncDefNode(node nodes.FuncDefNode, ctx runtime.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	var funcName *string = nil
+	if node.VarNameTok != nil {
+		funcNameStrVal := node.VarNameTok.Value.(string)
+		funcName = &funcNameStrVal
+	}
+
+	bodyNode := node.BodyNode
+	var argNames []string
+	for i := 0; i < len(node.ArgNameToks); i++ {
+		argNames = append(argNames, node.ArgNameToks[i].Value.(string))
+	}
+	funcValue := values.NewFunction(funcName, bodyNode, argNames)
+	funcValue.SetContext(ctx)
+	funcValue.SetValuePos(node.GetPosRange())
+
+	if funcName != nil {
+		ctx.SymTable.SetSymbol(*funcName, funcValue)
+	}
+	return res.Success(funcValue)
+}
+
+func VisitCallNode(node nodes.CallNode, ctx runtime.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+	var args []values.BaseValueInterface
+
+	valueToCall := res.Register(Visit(node.NodeToCall, ctx))
+	if res.Err != nil {
+		return res
+	}
+	valueToCall = valueToCall.Copy()
+	valueToCall.SetValuePos(node.GetPosRange())
+
+	for i := 0; i < len(node.ArgNodes); i++ {
+		args = append(args, res.Register(Visit(node.ArgNodes[i], ctx)))
+		if res.Err != nil {
+			return res
+		}
+	}
+	returnValue := res.Register(ExecuteFunction(valueToCall.(*values.Function), args))
+	if res.Err != nil {
+		return res
+	}
+	return res.Success(returnValue)
+}
+
+// *Function Calls
+func ExecuteFunction(function *values.Function, args []values.BaseValueInterface) *RuntimeResult {
+	res := NewRuntimeResult()
+	posRange := function.GetPosRange()
+	parentCtx := function.GetContext()
+	newCtx := runtime.Context{DisplayName: function.Name, Parent: &parentCtx, ParentEntryPos: function.GetPosRange().Start, SymTable: parentCtx.SymTable}
+
+	if len(args) > len(function.ArgNames) {
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, fmt.Sprintf("%d too many args passed into '%s'", len(args)-len(function.ArgNames), function.Name), parentCtx))
+	}
+	if len(args) < len(function.ArgNames) {
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, fmt.Sprintf("%d too few args passed into '%s'", len(function.ArgNames)-len(args), function.Name), parentCtx))
+	}
+	for i := 0; i < len(args); i++ {
+		argName := function.ArgNames[i]
+		argValue := args[i]
+		argValue.SetContext(newCtx)
+		newCtx.SymTable.SetSymbol(argName, argValue)
+	}
+
+	value := res.Register(Visit(function.BodyNode, newCtx))
+	if res.Err != nil {
+		return res
+	}
+	return res.Success(value)
 }

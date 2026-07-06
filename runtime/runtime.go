@@ -6,6 +6,7 @@ import (
 	"github.com/DGTV11/weh-script/position"
 )
 
+// *Context
 type Context struct {
 	DisplayName    string
 	Parent         *Context
@@ -26,6 +27,7 @@ func (ctx *Context) GenerateTraceback(positionStart *position.Position) string {
 	return "Traceback (most recent call last):\n" + result
 }
 
+// *SymbolTable
 type SymbolTable struct {
 	Symbols map[string]any
 	Parent  *SymbolTable

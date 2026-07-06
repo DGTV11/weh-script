@@ -1,10 +1,13 @@
 package values
 
 import (
+	"fmt"
+	"log"
 	"math"
 	"strconv"
 
 	"github.com/DGTV11/weh-script/errors"
+	"github.com/DGTV11/weh-script/nodes"
 	"github.com/DGTV11/weh-script/position"
 	"github.com/DGTV11/weh-script/runtime"
 )
@@ -61,6 +64,7 @@ type BaseValueInterface interface {
 	LNot() (BaseValueInterface, *errors.Error)
 	Copy() BaseValueInterface
 	IsTrue() bool
+	IllegalOperation(other BaseValueInterface) *errors.Error
 	String() string
 }
 
@@ -83,6 +87,83 @@ func (bv *BaseValue) SetContext(ctx runtime.Context) {
 	bv.Ctx = ctx
 }
 
+func (self *BaseValue) Add(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	return nil, self.IllegalOperation(other)
+}
+func (self *BaseValue) Sub(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	return nil, self.IllegalOperation(other)
+}
+func (self *BaseValue) Mul(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	return nil, self.IllegalOperation(other)
+}
+func (self *BaseValue) Div(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	return nil, self.IllegalOperation(other)
+}
+func (self *BaseValue) Pow(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	return nil, self.IllegalOperation(other)
+}
+func (self *BaseValue) Eq(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	return nil, self.IllegalOperation(other)
+}
+func (self *BaseValue) Ne(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	return nil, self.IllegalOperation(other)
+}
+func (self *BaseValue) Lt(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	return nil, self.IllegalOperation(other)
+}
+func (self *BaseValue) Gt(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	return nil, self.IllegalOperation(other)
+}
+func (self *BaseValue) Lte(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	return nil, self.IllegalOperation(other)
+}
+func (self *BaseValue) Gte(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	return nil, self.IllegalOperation(other)
+}
+
+//	func (self *BaseValue) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+//		return nil, self.IllegalOperation(other)
+//	}
+//
+//	func (self *BaseValue) LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+//		return nil, self.IllegalOperation(other)
+//	}
+//
+//	func (self *BaseValue) LNot() (BaseValueInterface, *errors.Error) {
+//		return nil, self.IllegalOperation(nil)
+//	}
+func (self *BaseValue) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(self.IsTrue() && other.IsTrue())}
+	return res, nil
+}
+func (self *BaseValue) LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(self.IsTrue() || other.IsTrue())}
+	return res, nil
+}
+func (self *BaseValue) LNot() (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(!self.IsTrue())}
+	return res, nil
+}
+func (self *BaseValue) Copy() BaseValueInterface {
+	log.Fatal("No Copy method defined")
+	return nil
+}
+
+func (self *BaseValue) IsTrue() bool {
+	return false
+}
+
+func (self *BaseValue) IllegalOperation(other BaseValueInterface) *errors.Error {
+	var otherPosRange position.PositionRange
+	if other == nil {
+		otherPosRange = self.GetPosRange()
+	} else {
+		otherPosRange = other.GetPosRange()
+	}
+
+	return errors.NewRuntimeError(self.GetPosRange().Start, otherPosRange.End, "Illegal operation", self.GetContext())
+}
+
 // *Integer
 type Integer struct {
 	BaseValue
@@ -99,6 +180,8 @@ func (self *Integer) Add(other BaseValueInterface) (BaseValueInterface, *errors.
 	case *Float:
 		res = &Float{Value: float64(self.Value) + o.Value}
 		res.SetContext(self.GetContext())
+	default:
+		return nil, self.IllegalOperation(other)
 	}
 	return res, nil
 }
@@ -108,11 +191,12 @@ func (self *Integer) Sub(other BaseValueInterface) (BaseValueInterface, *errors.
 	switch o := other.(type) {
 	case *Integer:
 		res = &Integer{Value: self.Value - o.Value}
-		res.SetContext(self.GetContext())
 	case *Float:
 		res = &Float{Value: float64(self.Value) - o.Value}
-		res.SetContext(self.GetContext())
+	default:
+		return nil, self.IllegalOperation(other)
 	}
+	res.SetContext(self.GetContext())
 	return res, nil
 }
 func (self *Integer) Mul(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
@@ -121,11 +205,12 @@ func (self *Integer) Mul(other BaseValueInterface) (BaseValueInterface, *errors.
 	switch o := other.(type) {
 	case *Integer:
 		res = &Integer{Value: self.Value * o.Value}
-		res.SetContext(self.GetContext())
 	case *Float:
 		res = &Float{Value: float64(self.Value) * o.Value}
-		res.SetContext(self.GetContext())
+	default:
+		return nil, self.IllegalOperation(other)
 	}
+	res.SetContext(self.GetContext())
 	return res, nil
 }
 func (self *Integer) Div(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
@@ -138,14 +223,15 @@ func (self *Integer) Div(other BaseValueInterface) (BaseValueInterface, *errors.
 			return nil, errors.NewRuntimeError(otherPosRange.Start, otherPosRange.End, "Division by zero", self.GetContext())
 		}
 		res = &Float{Value: float64(self.Value) / float64(o.Value)}
-		res.SetContext(self.GetContext())
 	case *Float:
 		if o.Value == 0.0 {
 			return nil, errors.NewRuntimeError(otherPosRange.Start, otherPosRange.End, "Division by zero", self.GetContext())
 		}
 		res = &Float{Value: float64(self.Value) / o.Value}
-		res.SetContext(self.GetContext())
+	default:
+		return nil, self.IllegalOperation(other)
 	}
+	res.SetContext(self.GetContext())
 	return res, nil
 }
 func (self *Integer) Pow(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
@@ -158,6 +244,8 @@ func (self *Integer) Pow(other BaseValueInterface) (BaseValueInterface, *errors.
 	case *Float:
 		res = &Float{Value: math.Pow(float64(self.Value), o.Value)}
 		res.SetContext(self.GetContext())
+	default:
+		return nil, self.IllegalOperation(other)
 	}
 	return res, nil
 }
@@ -167,11 +255,12 @@ func (self *Integer) Eq(other BaseValueInterface) (BaseValueInterface, *errors.E
 	switch o := other.(type) {
 	case *Integer:
 		res = &Integer{Value: Bool2int64(self.Value == o.Value)}
-		res.SetContext(self.GetContext())
 	case *Float:
 		res = &Integer{Value: Bool2int64(float64(self.Value) == o.Value)}
-		res.SetContext(self.GetContext())
+	default:
+		return nil, self.IllegalOperation(other)
 	}
+	res.SetContext(self.GetContext())
 	return res, nil
 }
 func (self *Integer) Ne(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
@@ -180,11 +269,12 @@ func (self *Integer) Ne(other BaseValueInterface) (BaseValueInterface, *errors.E
 	switch o := other.(type) {
 	case *Integer:
 		res = &Integer{Value: Bool2int64(self.Value != o.Value)}
-		res.SetContext(self.GetContext())
 	case *Float:
 		res = &Integer{Value: Bool2int64(float64(self.Value) != o.Value)}
-		res.SetContext(self.GetContext())
+	default:
+		return nil, self.IllegalOperation(other)
 	}
+	res.SetContext(self.GetContext())
 	return res, nil
 }
 func (self *Integer) Lt(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
@@ -193,11 +283,12 @@ func (self *Integer) Lt(other BaseValueInterface) (BaseValueInterface, *errors.E
 	switch o := other.(type) {
 	case *Integer:
 		res = &Integer{Value: Bool2int64(self.Value < o.Value)}
-		res.SetContext(self.GetContext())
 	case *Float:
 		res = &Integer{Value: Bool2int64(float64(self.Value) < o.Value)}
-		res.SetContext(self.GetContext())
+	default:
+		return nil, self.IllegalOperation(other)
 	}
+	res.SetContext(self.GetContext())
 	return res, nil
 }
 func (self *Integer) Gt(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
@@ -206,11 +297,12 @@ func (self *Integer) Gt(other BaseValueInterface) (BaseValueInterface, *errors.E
 	switch o := other.(type) {
 	case *Integer:
 		res = &Integer{Value: Bool2int64(self.Value > o.Value)}
-		res.SetContext(self.GetContext())
 	case *Float:
 		res = &Integer{Value: Bool2int64(float64(self.Value) > o.Value)}
-		res.SetContext(self.GetContext())
+	default:
+		return nil, self.IllegalOperation(other)
 	}
+	res.SetContext(self.GetContext())
 	return res, nil
 }
 func (self *Integer) Lte(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
@@ -219,11 +311,12 @@ func (self *Integer) Lte(other BaseValueInterface) (BaseValueInterface, *errors.
 	switch o := other.(type) {
 	case *Integer:
 		res = &Integer{Value: Bool2int64(self.Value <= o.Value)}
-		res.SetContext(self.GetContext())
 	case *Float:
 		res = &Integer{Value: Bool2int64(float64(self.Value) <= o.Value)}
-		res.SetContext(self.GetContext())
+	default:
+		return nil, self.IllegalOperation(other)
 	}
+	res.SetContext(self.GetContext())
 	return res, nil
 }
 func (self *Integer) Gte(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
@@ -232,25 +325,29 @@ func (self *Integer) Gte(other BaseValueInterface) (BaseValueInterface, *errors.
 	switch o := other.(type) {
 	case *Integer:
 		res = &Integer{Value: Bool2int64(self.Value >= o.Value)}
-		res.SetContext(self.GetContext())
 	case *Float:
 		res = &Integer{Value: Bool2int64(float64(self.Value) >= o.Value)}
-		res.SetContext(self.GetContext())
+	default:
+		return nil, self.IllegalOperation(other)
 	}
+	res.SetContext(self.GetContext())
 	return res, nil
 }
-func (self *Integer) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
-	res := &Integer{Value: Bool2int64(self.IsTrue() && other.IsTrue())}
-	return res, nil
-}
-func (self *Integer) LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
-	res := &Integer{Value: Bool2int64(self.IsTrue() || other.IsTrue())}
-	return res, nil
-}
-func (self *Integer) LNot() (BaseValueInterface, *errors.Error) {
-	res := &Integer{Value: Bool2int64(!self.IsTrue())}
-	return res, nil
-}
+
+//	func (self *Integer) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+//		res := &Integer{Value: Bool2int64(self.IsTrue() && other.IsTrue())}
+//		return res, nil
+//	}
+//
+//	func (self *Integer) LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+//		res := &Integer{Value: Bool2int64(self.IsTrue() || other.IsTrue())}
+//		return res, nil
+//	}
+//
+//	func (self *Integer) LNot() (BaseValueInterface, *errors.Error) {
+//		res := &Integer{Value: Bool2int64(!self.IsTrue())}
+//		return res, nil
+//	}
 func (self *Integer) Copy() BaseValueInterface {
 	copy := &Integer{Value: self.Value}
 	copy.SetValuePos(self.GetPosRange())
@@ -289,11 +386,12 @@ func (self *Float) Sub(other BaseValueInterface) (BaseValueInterface, *errors.Er
 	switch o := other.(type) {
 	case *Float:
 		res = &Float{Value: self.Value - o.Value}
-		res.SetContext(self.GetContext())
 	case *Integer:
 		res = &Float{Value: self.Value - float64(o.Value)}
-		res.SetContext(self.GetContext())
+	default:
+		return nil, self.IllegalOperation(other)
 	}
+	res.SetContext(self.GetContext())
 	return res, nil
 }
 func (self *Float) Mul(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
@@ -302,11 +400,12 @@ func (self *Float) Mul(other BaseValueInterface) (BaseValueInterface, *errors.Er
 	switch o := other.(type) {
 	case *Float:
 		res = &Float{Value: self.Value * o.Value}
-		res.SetContext(self.GetContext())
 	case *Integer:
 		res = &Float{Value: self.Value * float64(o.Value)}
-		res.SetContext(self.GetContext())
+	default:
+		return nil, self.IllegalOperation(other)
 	}
+	res.SetContext(self.GetContext())
 	return res, nil
 }
 func (self *Float) Div(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
@@ -319,14 +418,15 @@ func (self *Float) Div(other BaseValueInterface) (BaseValueInterface, *errors.Er
 			return nil, errors.NewRuntimeError(otherPosRange.Start, otherPosRange.End, "Division by zero", self.GetContext())
 		}
 		res = &Float{Value: self.Value / o.Value}
-		res.SetContext(self.GetContext())
 	case *Integer:
 		if o.Value == 0 {
 			return nil, errors.NewRuntimeError(otherPosRange.Start, otherPosRange.End, "Division by zero", self.GetContext())
 		}
 		res = &Float{Value: self.Value / float64(o.Value)}
-		res.SetContext(self.GetContext())
+	default:
+		return nil, self.IllegalOperation(other)
 	}
+	res.SetContext(self.GetContext())
 	return res, nil
 }
 func (self *Float) Pow(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
@@ -335,11 +435,12 @@ func (self *Float) Pow(other BaseValueInterface) (BaseValueInterface, *errors.Er
 	switch o := other.(type) {
 	case *Float:
 		res = &Float{Value: math.Pow(self.Value, o.Value)}
-		res.SetContext(self.GetContext())
 	case *Integer:
 		res = &Float{Value: math.Pow(self.Value, float64(o.Value))}
-		res.SetContext(self.GetContext())
+	default:
+		return nil, self.IllegalOperation(other)
 	}
+	res.SetContext(self.GetContext())
 	return res, nil
 }
 func (self *Float) Eq(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
@@ -348,11 +449,12 @@ func (self *Float) Eq(other BaseValueInterface) (BaseValueInterface, *errors.Err
 	switch o := other.(type) {
 	case *Float:
 		res = &Integer{Value: Bool2int64(self.Value == o.Value)}
-		res.SetContext(self.GetContext())
 	case *Integer:
 		res = &Integer{Value: Bool2int64(self.Value == float64(o.Value))}
-		res.SetContext(self.GetContext())
+	default:
+		return nil, self.IllegalOperation(other)
 	}
+	res.SetContext(self.GetContext())
 	return res, nil
 }
 func (self *Float) Ne(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
@@ -361,11 +463,12 @@ func (self *Float) Ne(other BaseValueInterface) (BaseValueInterface, *errors.Err
 	switch o := other.(type) {
 	case *Float:
 		res = &Integer{Value: Bool2int64(self.Value != o.Value)}
-		res.SetContext(self.GetContext())
 	case *Integer:
 		res = &Integer{Value: Bool2int64(self.Value != float64(o.Value))}
-		res.SetContext(self.GetContext())
+	default:
+		return nil, self.IllegalOperation(other)
 	}
+	res.SetContext(self.GetContext())
 	return res, nil
 }
 func (self *Float) Lt(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
@@ -374,11 +477,12 @@ func (self *Float) Lt(other BaseValueInterface) (BaseValueInterface, *errors.Err
 	switch o := other.(type) {
 	case *Float:
 		res = &Integer{Value: Bool2int64(self.Value < o.Value)}
-		res.SetContext(self.GetContext())
 	case *Integer:
 		res = &Integer{Value: Bool2int64(self.Value < float64(o.Value))}
-		res.SetContext(self.GetContext())
+	default:
+		return nil, self.IllegalOperation(other)
 	}
+	res.SetContext(self.GetContext())
 	return res, nil
 }
 func (self *Float) Gt(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
@@ -387,11 +491,12 @@ func (self *Float) Gt(other BaseValueInterface) (BaseValueInterface, *errors.Err
 	switch o := other.(type) {
 	case *Float:
 		res = &Integer{Value: Bool2int64(self.Value > o.Value)}
-		res.SetContext(self.GetContext())
 	case *Integer:
 		res = &Integer{Value: Bool2int64(self.Value > float64(o.Value))}
-		res.SetContext(self.GetContext())
+	default:
+		return nil, self.IllegalOperation(other)
 	}
+	res.SetContext(self.GetContext())
 	return res, nil
 }
 func (self *Float) Lte(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
@@ -400,11 +505,12 @@ func (self *Float) Lte(other BaseValueInterface) (BaseValueInterface, *errors.Er
 	switch o := other.(type) {
 	case *Float:
 		res = &Integer{Value: Bool2int64(self.Value <= o.Value)}
-		res.SetContext(self.GetContext())
 	case *Integer:
 		res = &Integer{Value: Bool2int64(self.Value <= float64(o.Value))}
-		res.SetContext(self.GetContext())
+	default:
+		return nil, self.IllegalOperation(other)
 	}
+	res.SetContext(self.GetContext())
 	return res, nil
 }
 func (self *Float) Gte(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
@@ -413,25 +519,29 @@ func (self *Float) Gte(other BaseValueInterface) (BaseValueInterface, *errors.Er
 	switch o := other.(type) {
 	case *Float:
 		res = &Integer{Value: Bool2int64(self.Value >= o.Value)}
-		res.SetContext(self.GetContext())
 	case *Integer:
 		res = &Integer{Value: Bool2int64(self.Value >= float64(o.Value))}
-		res.SetContext(self.GetContext())
+	default:
+		return nil, self.IllegalOperation(other)
 	}
+	res.SetContext(self.GetContext())
 	return res, nil
 }
-func (self *Float) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
-	res := &Integer{Value: Bool2int64(self.IsTrue() && other.IsTrue())}
-	return res, nil
-}
-func (self *Float) LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
-	res := &Integer{Value: Bool2int64(self.IsTrue() || other.IsTrue())}
-	return res, nil
-}
-func (self *Float) LNot() (BaseValueInterface, *errors.Error) {
-	res := &Integer{Value: Bool2int64(!self.IsTrue())}
-	return res, nil
-}
+
+//	func (self *Float) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+//		res := &Integer{Value: Bool2int64(self.IsTrue() && other.IsTrue())}
+//		return res, nil
+//	}
+//
+//	func (self *Float) LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+//		res := &Integer{Value: Bool2int64(self.IsTrue() || other.IsTrue())}
+//		return res, nil
+//	}
+//
+//	func (self *Float) LNot() (BaseValueInterface, *errors.Error) {
+//		res := &Integer{Value: Bool2int64(!self.IsTrue())}
+//		return res, nil
+//	}
 func (self *Float) Copy() BaseValueInterface {
 	copy := &Float{Value: self.Value}
 	copy.SetValuePos(self.GetPosRange())
@@ -443,4 +553,37 @@ func (self *Float) IsTrue() bool {
 }
 func (self *Float) String() string {
 	return strconv.FormatFloat(self.Value, 'g', -1, 64)
+}
+
+// *Function
+type Function struct {
+	BaseValue
+	Name     string
+	BodyNode nodes.Node
+	ArgNames []string
+}
+
+func NewFunction(name *string, bodyNode nodes.Node, argNames []string) *Function {
+	var funcName string
+	if name == nil {
+		funcName = "<anonymous>"
+	} else {
+		funcName = *name
+	}
+	return &Function{
+		Name:     funcName,
+		BodyNode: bodyNode,
+		ArgNames: argNames,
+	}
+}
+
+func (self *Function) String() string {
+	return fmt.Sprintf("<function %s>", self.Name)
+}
+
+func (self *Function) Copy() BaseValueInterface {
+	copy := &Function{Name: self.Name, BodyNode: self.BodyNode, ArgNames: self.ArgNames}
+	copy.SetValuePos(self.GetPosRange())
+	copy.SetContext(self.GetContext())
+	return copy
 }
