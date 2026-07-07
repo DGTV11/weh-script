@@ -137,9 +137,11 @@ func NewIfNode(cases []IfCase, elseCase Node) IfNode {
 		BaseNode: BaseNode{PosRange: position.PositionRange{Start: cases[0].Cond.GetPosRange().Start, End: lastNode.GetPosRange().End}},
 	}
 }
-
+func (c IfCase) String() string {
+	return fmt.Sprintf("(%v : %v)", c.Cond, c.Expr)
+}
 func (n IfNode) String() string {
-	return fmt.Sprintf("(IF NODE)") //TODO
+	return fmt.Sprintf("(IF CASES %v ELSE %v)", n.Cases, n.ElseCase)
 }
 
 type ForNode struct {
@@ -163,7 +165,7 @@ func NewForNode(varNameTok tokens.Token, startValueNode Node, stopValueNode Node
 }
 
 func (n ForNode) String() string {
-	return fmt.Sprintf("(FOR NODE)") //TODO
+	return fmt.Sprintf("(FOR %v=%v TO %v STEP %v THEN %v)", n.VarNameTok, n.StartValueNode, n.StopValueNode, n.StepValueNode, n.BodyNode)
 }
 
 type WhileNode struct {
@@ -181,7 +183,7 @@ func NewWhileNode(condNode Node, bodyNode Node) WhileNode {
 }
 
 func (n WhileNode) String() string {
-	return fmt.Sprintf("(WHILE NODE)") //TODO
+	return fmt.Sprintf("(WHILE %v THEN %v)", n.CondNode, n.BodyNode)
 }
 
 type FuncDefNode struct {
@@ -211,7 +213,7 @@ func NewFuncDefNode(varNameTok *tokens.Token, argNameToks []tokens.Token, bodyNo
 }
 
 func (n FuncDefNode) String() string {
-	return fmt.Sprintf("(FUNC DEF NODE)") //TODO
+	return fmt.Sprintf("(FUNC %v ARGS %v => %v)", n.VarNameTok, n.ArgNameToks, n.BodyNode)
 }
 
 type CallNode struct {
@@ -237,5 +239,5 @@ func NewCallNode(nodeToCall Node, argNodes []Node) CallNode {
 }
 
 func (n CallNode) String() string {
-	return fmt.Sprintf("(CALL NODE)") //TODO
+	return fmt.Sprintf("(CALL %v ARGS %v)", n.NodeToCall, n.ArgNodes)
 }

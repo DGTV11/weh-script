@@ -35,6 +35,7 @@ func Run(fileName string, text string, globalSymbolTable *runtime.SymbolTable) (
 	if ast.Err != nil {
 		return nil, ast.Err
 	}
+	// fmt.Println(ast.Node)
 
 	context := runtime.Context{DisplayName: "<program>", SymTable: globalSymbolTable}
 	result := interpreter.Visit(ast.Node, context)
