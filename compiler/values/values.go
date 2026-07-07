@@ -6,10 +6,10 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/DGTV11/weh-script/errors"
-	"github.com/DGTV11/weh-script/nodes"
-	"github.com/DGTV11/weh-script/position"
-	"github.com/DGTV11/weh-script/runtime"
+	"github.com/DGTV11/weh-script/compiler/environment"
+	"github.com/DGTV11/weh-script/compiler/errors"
+	"github.com/DGTV11/weh-script/compiler/nodes"
+	"github.com/DGTV11/weh-script/compiler/position"
 )
 
 // *Helper functions
@@ -46,8 +46,8 @@ func Bool2int64(b bool) int64 {
 type BaseValueInterface interface {
 	GetPosRange() position.PositionRange
 	SetValuePos(position.PositionRange)
-	GetContext() runtime.Context
-	SetContext(ctx runtime.Context)
+	GetContext() environment.Context
+	SetContext(ctx environment.Context)
 	Add(other BaseValueInterface) (BaseValueInterface, *errors.Error)
 	Sub(other BaseValueInterface) (BaseValueInterface, *errors.Error)
 	Mul(other BaseValueInterface) (BaseValueInterface, *errors.Error)
@@ -70,7 +70,7 @@ type BaseValueInterface interface {
 
 type BaseValue struct {
 	PosRange position.PositionRange
-	Ctx      runtime.Context
+	Ctx      environment.Context
 }
 
 func (bv *BaseValue) GetPosRange() position.PositionRange {
@@ -80,10 +80,10 @@ func (bv *BaseValue) SetValuePos(posRange position.PositionRange) {
 	bv.PosRange = posRange
 }
 
-func (bv *BaseValue) GetContext() runtime.Context {
+func (bv *BaseValue) GetContext() environment.Context {
 	return bv.Ctx
 }
-func (bv *BaseValue) SetContext(ctx runtime.Context) {
+func (bv *BaseValue) SetContext(ctx environment.Context) {
 	bv.Ctx = ctx
 }
 

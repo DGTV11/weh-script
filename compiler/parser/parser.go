@@ -3,9 +3,9 @@ package parser
 import (
 	"slices"
 
-	"github.com/DGTV11/weh-script/errors"
-	"github.com/DGTV11/weh-script/nodes"
-	"github.com/DGTV11/weh-script/tokens"
+	"github.com/DGTV11/weh-script/compiler/errors"
+	"github.com/DGTV11/weh-script/compiler/nodes"
+	"github.com/DGTV11/weh-script/compiler/tokens"
 )
 
 type ParseResult struct {

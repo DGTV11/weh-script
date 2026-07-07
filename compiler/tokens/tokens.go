@@ -3,7 +3,7 @@ package tokens
 import (
 	"fmt"
 
-	"github.com/DGTV11/weh-script/position"
+	"github.com/DGTV11/weh-script/compiler/position"
 )
 
 type TokenType int

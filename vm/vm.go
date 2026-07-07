@@ -1,7 +1,0 @@
-package vm
-
-//TODO: https://craftinginterpreters.com/chunks-of-bytecode.html
-//https://gist.github.com/o11c/6b08643335388bbab0228db763f99219
-//only after making bitwise/structs or OOP in lang + making syntax saner
-//maybe make in diff prog lang e.g. pure C or C++ or rust (and pray genericuser or myself wont pwn its arse)
-//(perhaps both callable from go via FFI and bundleable with bytecode as portable executable, tho executable would be messy since may need to compile interpreter)

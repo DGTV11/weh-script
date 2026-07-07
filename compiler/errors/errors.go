@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/DGTV11/weh-script/position"
-	"github.com/DGTV11/weh-script/runtime"
+	"github.com/DGTV11/weh-script/compiler/environment"
+	"github.com/DGTV11/weh-script/compiler/position"
 )
 
 // *Regular errors
@@ -57,7 +57,7 @@ type Error struct {
 	PositionEnd   *position.Position
 	Name          string
 	Details       string
-	Ctx           *runtime.Context
+	Ctx           *environment.Context
 }
 
 func (e Error) String() string {
@@ -91,10 +91,10 @@ func NewSyntaxNotImplementedError(positionStart *position.Position, positionEnd 
 
 //*Runtime errors
 
-func NewRuntimeError(positionStart *position.Position, positionEnd *position.Position, details string, ctx runtime.Context) *Error {
+func NewRuntimeError(positionStart *position.Position, positionEnd *position.Position, details string, ctx environment.Context) *Error {
 	return &Error{PositionStart: positionStart, PositionEnd: positionEnd, Name: "Runtime Error", Details: details, Ctx: &ctx}
 }
 
-func NewNotImplementedError(positionStart *position.Position, positionEnd *position.Position, details string, ctx runtime.Context) *Error {
+func NewNotImplementedError(positionStart *position.Position, positionEnd *position.Position, details string, ctx environment.Context) *Error {
 	return &Error{PositionStart: positionStart, PositionEnd: positionEnd, Name: "Not Implemented", Details: details, Ctx: &ctx}
 }

@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/DGTV11/weh-script/errors"
-	"github.com/DGTV11/weh-script/interpreter"
-	"github.com/DGTV11/weh-script/lexer"
-	"github.com/DGTV11/weh-script/parser"
-	"github.com/DGTV11/weh-script/runtime"
-	"github.com/DGTV11/weh-script/values"
+	"github.com/DGTV11/weh-script/compiler/environment"
+	"github.com/DGTV11/weh-script/compiler/errors"
+	"github.com/DGTV11/weh-script/compiler/interpreter"
+	"github.com/DGTV11/weh-script/compiler/lexer"
+	"github.com/DGTV11/weh-script/compiler/parser"
+	"github.com/DGTV11/weh-script/compiler/values"
 )
 
-func SetupGlobalymbolTable() *runtime.SymbolTable {
-	GlobalSymbolTable := runtime.SymbolTable{Symbols: map[string]any{}}
+func SetupGlobalymbolTable() *environment.SymbolTable {
+	GlobalSymbolTable := environment.SymbolTable{Symbols: map[string]any{}}
 
 	GlobalSymbolTable.SetSymbol("null", &values.Integer{Value: 0})
 	GlobalSymbolTable.SetSymbol("true", &values.Integer{Value: 1})
@@ -23,7 +23,7 @@ func SetupGlobalymbolTable() *runtime.SymbolTable {
 	return &GlobalSymbolTable
 }
 
-func Run(fileName string, text string, globalSymbolTable *runtime.SymbolTable) (any, *errors.Error) {
+func Run(fileName string, text string, globalSymbolTable *environment.SymbolTable) (any, *errors.Error) {
 	_lexer := lexer.NewLexer(fileName, text)
 	tokens, err := _lexer.Tokenise()
 	if err != nil {
@@ -37,7 +37,7 @@ func Run(fileName string, text string, globalSymbolTable *runtime.SymbolTable) (
 	}
 	// fmt.Println(ast.Node)
 
-	context := runtime.Context{DisplayName: "<program>", SymTable: globalSymbolTable}
+	context := environment.Context{DisplayName: "<program>", SymTable: globalSymbolTable}
 	result := interpreter.Visit(ast.Node, context)
 
 	return result.Value, result.Err

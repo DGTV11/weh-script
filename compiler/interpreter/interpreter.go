@@ -3,11 +3,11 @@ package interpreter
 import (
 	"fmt"
 
-	"github.com/DGTV11/weh-script/errors"
-	"github.com/DGTV11/weh-script/nodes"
-	"github.com/DGTV11/weh-script/runtime"
-	"github.com/DGTV11/weh-script/tokens"
-	"github.com/DGTV11/weh-script/values"
+	"github.com/DGTV11/weh-script/compiler/environment"
+	"github.com/DGTV11/weh-script/compiler/errors"
+	"github.com/DGTV11/weh-script/compiler/nodes"
+	"github.com/DGTV11/weh-script/compiler/tokens"
+	"github.com/DGTV11/weh-script/compiler/values"
 )
 
 // *RuntimeResult
@@ -38,7 +38,7 @@ func (rr *RuntimeResult) Failure(err *errors.Error) *RuntimeResult {
 }
 
 // *Main Interpreter
-func Visit(node nodes.Node, ctx runtime.Context) *RuntimeResult {
+func Visit(node nodes.Node, ctx environment.Context) *RuntimeResult {
 	switch n := node.(type) {
 	case nodes.NumberNode:
 		return VisitNumberNode(node.(nodes.NumberNode), ctx)
@@ -66,7 +66,7 @@ func Visit(node nodes.Node, ctx runtime.Context) *RuntimeResult {
 	}
 }
 
-func VisitNumberNode(node nodes.NumberNode, ctx runtime.Context) *RuntimeResult {
+func VisitNumberNode(node nodes.NumberNode, ctx environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 	var number values.BaseValueInterface = nil
 
@@ -84,7 +84,7 @@ func VisitNumberNode(node nodes.NumberNode, ctx runtime.Context) *RuntimeResult 
 	return res.Success(number)
 }
 
-func VisitVariableAccessNode(node nodes.VariableAccessNode, ctx runtime.Context) *RuntimeResult {
+func VisitVariableAccessNode(node nodes.VariableAccessNode, ctx environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 	posRange := node.GetPosRange()
 
@@ -102,7 +102,7 @@ func VisitVariableAccessNode(node nodes.VariableAccessNode, ctx runtime.Context)
 	return res.Success(value)
 }
 
-func VisitVariableAssignNode(node nodes.VariableAssignNode, ctx runtime.Context) *RuntimeResult {
+func VisitVariableAssignNode(node nodes.VariableAssignNode, ctx environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 	varName := node.VarNameTok.Value.(string)
 	value := res.Register(Visit(node.ValueNode, ctx))
@@ -114,7 +114,7 @@ func VisitVariableAssignNode(node nodes.VariableAssignNode, ctx runtime.Context)
 	return res.Success(value)
 }
 
-func VisitBinOpNode(node nodes.BinOpNode, ctx runtime.Context) *RuntimeResult {
+func VisitBinOpNode(node nodes.BinOpNode, ctx environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	left := res.Register(Visit(node.LeftNode, ctx))
@@ -166,7 +166,7 @@ func VisitBinOpNode(node nodes.BinOpNode, ctx runtime.Context) *RuntimeResult {
 	return res.Success(result)
 }
 
-func VisitUnaryOpNode(node nodes.UnaryOpNode, ctx runtime.Context) *RuntimeResult {
+func VisitUnaryOpNode(node nodes.UnaryOpNode, ctx environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	number := res.Register(Visit(node.NodeValue, ctx))
@@ -191,7 +191,7 @@ func VisitUnaryOpNode(node nodes.UnaryOpNode, ctx runtime.Context) *RuntimeResul
 	return res.Success(number)
 }
 
-func VisitIfNode(node nodes.IfNode, ctx runtime.Context) *RuntimeResult {
+func VisitIfNode(node nodes.IfNode, ctx environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	for i := 0; i < len(node.Cases); i++ {
@@ -220,7 +220,7 @@ func VisitIfNode(node nodes.IfNode, ctx runtime.Context) *RuntimeResult {
 	return res.Success(&values.Integer{Value: 0})
 }
 
-func VisitForNode(node nodes.ForNode, ctx runtime.Context) *RuntimeResult {
+func VisitForNode(node nodes.ForNode, ctx environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	startValue := res.Register(Visit(node.StartValueNode, ctx))
@@ -282,7 +282,7 @@ func VisitForNode(node nodes.ForNode, ctx runtime.Context) *RuntimeResult {
 	return res.Success(&values.Integer{Value: 0})
 }
 
-func VisitWhileNode(node nodes.WhileNode, ctx runtime.Context) *RuntimeResult {
+func VisitWhileNode(node nodes.WhileNode, ctx environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	for {
@@ -303,7 +303,7 @@ func VisitWhileNode(node nodes.WhileNode, ctx runtime.Context) *RuntimeResult {
 	return res.Success(&values.Integer{Value: 0})
 }
 
-func VisitFuncDefNode(node nodes.FuncDefNode, ctx runtime.Context) *RuntimeResult {
+func VisitFuncDefNode(node nodes.FuncDefNode, ctx environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	var funcName *string = nil
@@ -327,7 +327,7 @@ func VisitFuncDefNode(node nodes.FuncDefNode, ctx runtime.Context) *RuntimeResul
 	return res.Success(funcValue)
 }
 
-func VisitCallNode(node nodes.CallNode, ctx runtime.Context) *RuntimeResult {
+func VisitCallNode(node nodes.CallNode, ctx environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 	var args []values.BaseValueInterface
 
@@ -356,7 +356,7 @@ func ExecuteFunction(function *values.Function, args []values.BaseValueInterface
 	res := NewRuntimeResult()
 	posRange := function.GetPosRange()
 	parentCtx := function.GetContext()
-	newCtx := runtime.Context{DisplayName: function.Name, Parent: &parentCtx, ParentEntryPos: function.GetPosRange().Start, SymTable: parentCtx.SymTable}
+	newCtx := environment.Context{DisplayName: function.Name, Parent: &parentCtx, ParentEntryPos: function.GetPosRange().Start, SymTable: parentCtx.SymTable}
 
 	if len(args) > len(function.ArgNames) {
 		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, fmt.Sprintf("%d too many args passed into '%s'", len(args)-len(function.ArgNames), function.Name), parentCtx))
