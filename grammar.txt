@@ -1,4 +1,4 @@
-expr        : Keyword:var IDENTIFIER Equals expr
+expr        : Keyword:var Identifier Equals expr
             : comp-expr ((LAnd|LOr) comp-expr)*
 
 comp-expr   : LNot comp-expr
