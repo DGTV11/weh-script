@@ -4,7 +4,8 @@
   - STATIC TYPING!!! also prevent var redeclaration (instead put a separate '=' rule alongside var assign in expr -> also include type info as in https://pkg.go.dev/reflect#example-TypeOf +prevent var type change in for loop)
   - add OOP+file I/0? https://craftinginterpreters.com/the-lox-language.html#classes
   - add AST optimiser? (+also add type inference)
-  - common Rust stdlib (may be inefficient/not exactly best idea but weh...)!
-  - saner CLI!
+  - common C stdlib (may be inefficient/not exactly best idea but weh...)!
+    - then need a better build system (make?)
+  - saner go CLI!
 2) make bytecode compiler + reg-based VM (give option to choose between AST tree-walk interpreter and bytecode interpreter, especially when running .weh script)
 3) make language runtime thingy (which can be compiled to executable) or stick with bytecode files
