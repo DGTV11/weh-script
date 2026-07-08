@@ -165,6 +165,21 @@ func (self *BaseValue) IllegalOperation(other BaseValueInterface) *errors.Error 
 	return errors.NewRuntimeError(self.GetPosRange().Start, otherPosRange.End, "Illegal operation", self.GetContext())
 }
 
+// *Null
+type Null struct {
+	BaseValue
+}
+
+func (self *Null) Copy() BaseValueInterface {
+	return self
+}
+func (self *Null) IsTrue() bool {
+	return false
+}
+func (self *Null) String() string {
+	return "null"
+}
+
 // *Integer
 type Integer struct {
 	BaseValue

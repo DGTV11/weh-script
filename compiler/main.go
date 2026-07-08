@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"reflect"
 
 	"github.com/DGTV11/weh-script/compiler/environment"
 	"github.com/DGTV11/weh-script/compiler/errors"
@@ -16,7 +17,7 @@ import (
 func SetupGlobalymbolTable() *environment.SymbolTable {
 	GlobalSymbolTable := environment.SymbolTable{Symbols: map[string]any{}}
 
-	GlobalSymbolTable.SetSymbol("null", &values.Integer{Value: 0})
+	GlobalSymbolTable.SetSymbol("null", &values.Null{})
 	GlobalSymbolTable.SetSymbol("true", &values.Integer{Value: 1})
 	GlobalSymbolTable.SetSymbol("false", &values.Integer{Value: 0})
 
@@ -65,7 +66,7 @@ func main() {
 
 		if err != nil {
 			fmt.Println(err)
-		} else if res != nil {
+		} else if reflect.TypeOf(res).String() != "*values.Null" {
 			fmt.Println(res)
 		}
 	}

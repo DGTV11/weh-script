@@ -228,7 +228,7 @@ func VisitIfNode(node nodes.IfNode, ctx environment.Context) *RuntimeResult {
 	}
 
 	// return res.Success(nil)
-	return res.Success(&values.Integer{Value: 0})
+	return res.Success(&values.Null{})
 }
 
 func VisitForNode(node nodes.ForNode, ctx environment.Context) *RuntimeResult {
@@ -290,7 +290,7 @@ func VisitForNode(node nodes.ForNode, ctx environment.Context) *RuntimeResult {
 	}
 
 	// return res.Success(nil)
-	return res.Success(&values.Integer{Value: 0})
+	return res.Success(&values.Null{})
 }
 
 func VisitWhileNode(node nodes.WhileNode, ctx environment.Context) *RuntimeResult {
@@ -311,7 +311,7 @@ func VisitWhileNode(node nodes.WhileNode, ctx environment.Context) *RuntimeResul
 	}
 
 	// return res.Success(nil)
-	return res.Success(&values.Integer{Value: 0})
+	return res.Success(&values.Null{})
 }
 
 func VisitFuncDefNode(node nodes.FuncDefNode, ctx environment.Context) *RuntimeResult {
