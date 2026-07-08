@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"unicode"
 
+	"github.com/stanNthe5/stringbuf"
+
 	"github.com/DGTV11/weh-script/compiler/errors"
 	"github.com/DGTV11/weh-script/compiler/position"
 	"github.com/DGTV11/weh-script/compiler/tokens"
@@ -46,6 +48,13 @@ func (l *Lexer) Tokenise() ([]tokens.Token, *errors.Error) {
 			l.Advance()
 		case '\t':
 			l.Advance()
+		case '"':
+			posStart := l.Position.Copy()
+			tokp := l.MakeString()
+			if tokp == nil {
+				return []tokens.Token{}, errors.NewInvalidSyntaxError(posStart, &l.Position, "Unterminated string")
+			}
+			tokenList = append(tokenList, *tokp)
 		case '+':
 			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypePlus, nil, &l.Position, nil))
 			l.Advance()
@@ -249,5 +258,46 @@ func (l *Lexer) MakeIdentifierOrKeywordToken() *tokens.Token {
 	}
 
 	newTok := tokens.NewToken(_type, idStr, posStart, &l.Position)
+	return &newTok
+}
+
+var EscapeChars = map[rune]rune{
+	'n': '\n',
+	't': '\t',
+	'r': '\r',
+}
+
+func (l *Lexer) MakeString() *tokens.Token {
+	sb := stringbuf.New("")
+	posStart := l.Position.Copy()
+	atEscapeChar := false
+	l.Advance()
+
+	for l.CurrentChar != nil && (*l.CurrentChar != '"' || atEscapeChar == true) {
+		if atEscapeChar {
+			escapedRune, ok := EscapeChars[*l.CurrentChar]
+			if ok == false {
+				escapedRune = *l.CurrentChar
+			}
+			sb.AppendRune(escapedRune)
+			atEscapeChar = false
+		} else {
+			if *l.CurrentChar == '\\' {
+				atEscapeChar = true
+			} else {
+				sb.AppendRune(*l.CurrentChar)
+				atEscapeChar = false
+			}
+		}
+
+		l.Advance()
+	}
+
+	if l.CurrentChar == nil || *l.CurrentChar != '"' {
+		return nil
+	}
+
+	l.Advance()
+	newTok := tokens.NewToken(tokens.TokenTypeString, sb.String(), posStart, &l.Position)
 	return &newTok
 }

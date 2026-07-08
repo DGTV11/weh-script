@@ -42,6 +42,8 @@ func Visit(node nodes.Node, ctx environment.Context) *RuntimeResult {
 	switch n := node.(type) {
 	case nodes.NumberNode:
 		return VisitNumberNode(node.(nodes.NumberNode), ctx)
+	case nodes.StringNode:
+		return VisitStringNode(node.(nodes.StringNode), ctx)
 	case nodes.VariableAccessNode:
 		return VisitVariableAccessNode(node.(nodes.VariableAccessNode), ctx)
 	case nodes.VariableAssignNode:
@@ -82,6 +84,15 @@ func VisitNumberNode(node nodes.NumberNode, ctx environment.Context) *RuntimeRes
 	number.SetContext(ctx)
 	number.SetValuePos(node.GetPosRange())
 	return res.Success(number)
+}
+
+func VisitStringNode(node nodes.StringNode, ctx environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	str := &values.String{Value: node.Tok.Value.(string)}
+	str.SetContext(ctx)
+	str.SetValuePos(node.GetPosRange())
+	return res.Success(str)
 }
 
 func VisitVariableAccessNode(node nodes.VariableAccessNode, ctx environment.Context) *RuntimeResult {

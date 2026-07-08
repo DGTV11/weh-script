@@ -15,7 +15,7 @@ power       : call ((Pow) factor)*
 
 call        : atom (Lparen (expr (Comma expr)*)? Rparen)?
             
-atom        : Int|Float|Identifier
+atom        : Int|Float|String|Identifier
             : Lparen expr Rparen
             : if-expr
             : for-expr

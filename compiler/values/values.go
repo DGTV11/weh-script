@@ -5,6 +5,7 @@ import (
 	"log"
 	"math"
 	"strconv"
+	"strings"
 
 	"github.com/DGTV11/weh-script/compiler/environment"
 	"github.com/DGTV11/weh-script/compiler/errors"
@@ -207,6 +208,11 @@ func (self *Integer) Mul(other BaseValueInterface) (BaseValueInterface, *errors.
 		res = &Integer{Value: self.Value * o.Value}
 	case *Float:
 		res = &Float{Value: float64(self.Value) * o.Value}
+	case *String:
+		if int64(int(self.Value)) != self.Value || ((len(o.Value)*int(self.Value))/int(self.Value)) != len(o.Value) { //*detects integer overflow if any, based on https://www.geeksforgeeks.org/dsa/check-integer-overflow-multiplication/ with extra condition
+			return nil, errors.NewRuntimeError(self.GetPosRange().Start, other.GetPosRange().End, "String length limit exceeded", self.GetContext())
+		}
+		res = &String{Value: strings.Repeat(o.Value, int(self.Value))}
 	default:
 		return nil, self.IllegalOperation(other)
 	}
@@ -553,6 +559,52 @@ func (self *Float) IsTrue() bool {
 }
 func (self *Float) String() string {
 	return strconv.FormatFloat(self.Value, 'g', -1, 64)
+}
+
+// *String
+type String struct {
+	BaseValue
+	Value string
+}
+
+func (self *String) Add(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *String:
+		res = &String{Value: self.Value + o.Value}
+		res.SetContext(self.GetContext())
+	default:
+		return nil, self.IllegalOperation(other)
+	}
+	return res, nil
+}
+func (self *String) Mul(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Integer:
+		if int64(int(o.Value)) != o.Value || ((len(self.Value)*int(o.Value))/int(o.Value)) != len(self.Value) { //*detects integer overflow if any, based on https://www.geeksforgeeks.org/dsa/check-integer-overflow-multiplication/ with extra condition
+			return nil, errors.NewRuntimeError(self.GetPosRange().Start, other.GetPosRange().End, "String length limit exceeded", self.GetContext())
+		}
+		res = &String{Value: strings.Repeat(self.Value, int(o.Value))}
+	default:
+		return nil, self.IllegalOperation(other)
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *String) Copy() BaseValueInterface {
+	copy := &String{Value: strings.Clone(self.Value)}
+	copy.SetValuePos(self.GetPosRange())
+	copy.SetContext(self.GetContext())
+	return copy
+}
+func (self *String) IsTrue() bool {
+	return len(self.Value) > 0
+}
+func (self *String) String() string {
+	return strconv.Quote(self.Value)
 }
 
 // *Function

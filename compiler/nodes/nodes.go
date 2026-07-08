@@ -38,6 +38,21 @@ func (n NumberNode) String() string {
 	return fmt.Sprintf("%v", n.Tok)
 }
 
+type StringNode struct {
+	BaseNode
+	Tok tokens.Token
+}
+
+func NewStringNode(tok tokens.Token) StringNode {
+	return StringNode{
+		Tok:      tok,
+		BaseNode: BaseNode{PosRange: position.PositionRange{Start: tok.PosRange.Start, End: tok.PosRange.End}},
+	}
+}
+func (n StringNode) String() string {
+	return fmt.Sprintf("%v", n.Tok)
+}
+
 type VariableAccessNode struct {
 	BaseNode
 	VarNameTok tokens.Token
