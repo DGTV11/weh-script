@@ -1,11 +1,15 @@
 1) finish the tutorials
   - STOPPED AT: https://www.youtube.com/watch?v=MzuzWupOFDg&list=PLZQftyCk7_SdoVexSmwy_tBgs7P0b97yD&index=11
 2) finish up good goods 
-  - STATIC TYPING!!! also prevent var redeclaration (instead put a separate '=' rule alongside var assign in expr -> also include type info as in https://pkg.go.dev/reflect#example-TypeOf +prevent var type change in for loop)
+  - prevent var redeclaration (instead put a separate '=' rule alongside var assign in expr -> also include type info as in https://pkg.go.dev/reflect#example-TypeOf +prevent var type change in for loop)
   - add OOP+file I/0? https://craftinginterpreters.com/the-lox-language.html#classes
-  - add AST optimiser? (+also add type inference)
+  - add AST optimiser?
   - common C stdlib (may be inefficient/not exactly best idea but weh...)!
     - then need a better build system (make?)
   - saner go CLI!
 2) make bytecode compiler + reg-based VM (give option to choose between AST tree-walk interpreter and bytecode interpreter, especially when running .weh script)
-3) make language runtime thingy (which can be compiled to executable) or stick with bytecode files
+3) make language bundled thingy (which can be compiled to portable executable) or stick with bytecode files
+
+optional (if i rlly want typing??):
+- STATIC TYPING!!! 
+- add type inference?
