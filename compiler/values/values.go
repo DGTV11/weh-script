@@ -239,6 +239,11 @@ func (self *Integer) Mul(other BaseValueInterface) (BaseValueInterface, *errors.
 			return nil, errors.NewRuntimeError(self.GetPosRange().Start, other.GetPosRange().End, "String length limit exceeded", self.GetContext())
 		}
 		res = &String{Value: strings.Repeat(o.Value, int(self.Value))}
+	case *List:
+		if ((len(o.Elements) * int(self.Value)) / int(self.Value)) != len(o.Elements) { //*detects integer overflow if any, based on https://www.geeksforgeeks.org/dsa/check-integer-overflow-multiplication/
+			return nil, errors.NewRuntimeError(self.GetPosRange().Start, other.GetPosRange().End, "Integer length limit exceeded", self.GetContext())
+		}
+		res = &List{Elements: slices.Repeat(o.Elements, int(self.Value))}
 	default:
 		return nil, self.IllegalOperation(other)
 	}
@@ -681,7 +686,10 @@ func (self *List) GetItem(other BaseValueInterface) (BaseValueInterface, *errors
 		}
 
 		if idx >= len(self.Elements) || idx < 0 {
-			return nil, errors.NewRuntimeError(self.GetPosRange().Start, other.GetPosRange().End, fmt.Sprintf("Element at index %d could not be retrieved from List because index is out of bounds", rawIdx), self.GetContext())
+			endPos := other.GetPosRange().End
+			x := ' '
+			endPos.Advance(&x) //*evil hack
+			return nil, errors.NewRuntimeError(self.GetPosRange().Start, endPos, fmt.Sprintf("Element at index %d could not be retrieved from List because index is out of bounds", rawIdx), self.GetContext())
 		}
 		res = self.Elements[idx]
 	default:
