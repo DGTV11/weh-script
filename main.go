@@ -3,9 +3,12 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"reflect"
 	"unsafe"
+
+	"github.com/spf13/pflag"
 
 	"github.com/DGTV11/weh-script/environment"
 	"github.com/DGTV11/weh-script/errors"
@@ -17,7 +20,7 @@ import (
 
 const _ = uint(1) / (uint(unsafe.Sizeof(int(0))) - 7) //ensures that size of int == size of int64
 
-func SetupGlobalymbolTable() *environment.SymbolTable {
+func SetupGlobalSymbolTable() *environment.SymbolTable {
 	GlobalSymbolTable := environment.SymbolTable{Symbols: map[string]any{}}
 
 	GlobalSymbolTable.SetSymbol("null", &values.Null{})
@@ -48,29 +51,36 @@ func Run(fileName string, text string, globalSymbolTable *environment.SymbolTabl
 }
 
 var text string
+var bytecodemode bool
 
 func main() {
 	fmt.Println("WehScript Programming Language")
 
-	globalSymbolTable := SetupGlobalymbolTable()
+	pflag.BoolVar(&bytecodemode, "bytecodemode", false, "Enable bytecode mode") //after implementing bytecode VM: default this to true and make non-bytecode mode legacy
+	pflag.Parse()
+	if bytecodemode == true {
+		log.Fatal("Bytecode VM not implemented")
+	} else {
+		globalSymbolTable := SetupGlobalSymbolTable()
 
-	for true {
-		fmt.Print("wehscript > ")
-		// fmt.Scanf("%[^\n]", &text)
+		for true {
+			fmt.Print("wehscript > ")
+			// fmt.Scanf("%[^\n]", &text)
 
-		scanner := bufio.NewScanner(os.Stdin)
-		scanner.Scan()
-		serr := scanner.Err()
-		if serr != nil {
-			fmt.Println(serr)
-		}
+			scanner := bufio.NewScanner(os.Stdin)
+			scanner.Scan()
+			serr := scanner.Err()
+			if serr != nil {
+				fmt.Println(serr)
+			}
 
-		res, err := Run("<stdin>", scanner.Text(), globalSymbolTable)
+			res, err := Run("<stdin>", scanner.Text(), globalSymbolTable)
 
-		if err != nil {
-			fmt.Println(err)
-		} else if reflect.TypeOf(res).String() != "*values.Null" {
-			fmt.Println(res)
+			if err != nil {
+				fmt.Println(err)
+			} else if reflect.TypeOf(res).String() != "*values.Null" {
+				fmt.Println(res)
+			}
 		}
 	}
 }
