@@ -3,7 +3,7 @@ package environment
 import (
 	"fmt"
 
-	"github.com/DGTV11/weh-script/compiler/position"
+	"github.com/DGTV11/weh-script/position"
 )
 
 // *Context

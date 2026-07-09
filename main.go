@@ -7,12 +7,12 @@ import (
 	"reflect"
 	"unsafe"
 
-	"github.com/DGTV11/weh-script/compiler/environment"
-	"github.com/DGTV11/weh-script/compiler/errors"
-	"github.com/DGTV11/weh-script/compiler/interpreter"
-	"github.com/DGTV11/weh-script/compiler/lexer"
-	"github.com/DGTV11/weh-script/compiler/parser"
-	"github.com/DGTV11/weh-script/compiler/values"
+	"github.com/DGTV11/weh-script/environment"
+	"github.com/DGTV11/weh-script/errors"
+	"github.com/DGTV11/weh-script/interpreter"
+	"github.com/DGTV11/weh-script/lexer"
+	"github.com/DGTV11/weh-script/parser"
+	"github.com/DGTV11/weh-script/values"
 )
 
 const _ = uint(1) / (uint(unsafe.Sizeof(int(0))) - 7) //ensures that size of int == size of int64

@@ -10,10 +10,10 @@ import (
 
 	"github.com/stanNthe5/stringbuf"
 
-	"github.com/DGTV11/weh-script/compiler/environment"
-	"github.com/DGTV11/weh-script/compiler/errors"
-	"github.com/DGTV11/weh-script/compiler/nodes"
-	"github.com/DGTV11/weh-script/compiler/position"
+	"github.com/DGTV11/weh-script/environment"
+	"github.com/DGTV11/weh-script/errors"
+	"github.com/DGTV11/weh-script/nodes"
+	"github.com/DGTV11/weh-script/position"
 )
 
 // *Helper functions

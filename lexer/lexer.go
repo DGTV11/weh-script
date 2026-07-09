@@ -7,9 +7,9 @@ import (
 
 	"github.com/stanNthe5/stringbuf"
 
-	"github.com/DGTV11/weh-script/compiler/errors"
-	"github.com/DGTV11/weh-script/compiler/position"
-	"github.com/DGTV11/weh-script/compiler/tokens"
+	"github.com/DGTV11/weh-script/errors"
+	"github.com/DGTV11/weh-script/position"
+	"github.com/DGTV11/weh-script/tokens"
 )
 
 type Lexer struct {

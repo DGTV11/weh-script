@@ -3,11 +3,11 @@ package interpreter
 import (
 	"fmt"
 
-	"github.com/DGTV11/weh-script/compiler/environment"
-	"github.com/DGTV11/weh-script/compiler/errors"
-	"github.com/DGTV11/weh-script/compiler/nodes"
-	"github.com/DGTV11/weh-script/compiler/tokens"
-	"github.com/DGTV11/weh-script/compiler/values"
+	"github.com/DGTV11/weh-script/environment"
+	"github.com/DGTV11/weh-script/errors"
+	"github.com/DGTV11/weh-script/nodes"
+	"github.com/DGTV11/weh-script/tokens"
+	"github.com/DGTV11/weh-script/values"
 )
 
 // *RuntimeResult

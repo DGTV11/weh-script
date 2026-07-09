@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/DGTV11/weh-script/compiler/environment"
-	"github.com/DGTV11/weh-script/compiler/position"
+	"github.com/DGTV11/weh-script/environment"
+	"github.com/DGTV11/weh-script/position"
 )
 
 // *Regular errors

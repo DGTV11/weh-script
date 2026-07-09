@@ -3,8 +3,8 @@ package nodes
 import (
 	"fmt"
 
-	"github.com/DGTV11/weh-script/compiler/position"
-	"github.com/DGTV11/weh-script/compiler/tokens"
+	"github.com/DGTV11/weh-script/position"
+	"github.com/DGTV11/weh-script/tokens"
 )
 
 //*Base Node
