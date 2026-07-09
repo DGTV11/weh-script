@@ -495,7 +495,7 @@ func (p *Parser) Call() *ParseResult {
 				return res.Failure(
 					errors.NewInvalidSyntaxError(
 						p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
-						"Expected ')', 'var', 'if', 'for', 'while', 'func', integer, float, identifier, '+', '-' or '('",
+						"Expected ')', 'var', 'del', 'if', 'for', 'while', 'func', integer, float, identifier, '+', '-' or '('",
 					),
 				)
 			}
@@ -620,6 +620,24 @@ func (p *Parser) Expr() *ParseResult {
 			return res
 		}
 		return res.Success(nodes.NewVariableAssignNode(varName, expr))
+	} else if tok.Matches(tokens.TokenTypeKeyword, "del") {
+		res.RegisterAdvance()
+		p.Advance()
+
+		tok = *p.CurrentToken
+		if tok.Type != tokens.TokenTypeIdentifier {
+			return res.Failure(
+				errors.NewInvalidSyntaxError(
+					tok.PosRange.Start, tok.PosRange.End,
+					"Expected identifier",
+				),
+			)
+		}
+
+		res.RegisterAdvance()
+		p.Advance()
+
+		return res.Success(nodes.NewVariableDeleteNode(tok))
 	}
 
 	node := res.Register(p.BinOp(p.CompExpr, []tokens.TokenType{tokens.TokenTypeLAnd, tokens.TokenTypeLOr}, nil))
@@ -627,7 +645,7 @@ func (p *Parser) Expr() *ParseResult {
 		return res.Failure(
 			errors.NewInvalidSyntaxError(
 				tok.PosRange.Start, tok.PosRange.End,
-				"Expected 'var', 'if', 'for', 'while', 'func', integer, float, identifier, '+', '-' or '('",
+				"Expected 'var', 'del', 'if', 'for', 'while', 'func', integer, float, identifier, '+', '-' or '('",
 			),
 		)
 	}

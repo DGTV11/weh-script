@@ -48,6 +48,8 @@ func Visit(node nodes.Node, ctx environment.Context) *RuntimeResult {
 		return VisitVariableAccessNode(node.(nodes.VariableAccessNode), ctx)
 	case nodes.VariableAssignNode:
 		return VisitVariableAssignNode(node.(nodes.VariableAssignNode), ctx)
+	case nodes.VariableDeleteNode:
+		return VisitVariableDeleteNode(node.(nodes.VariableDeleteNode), ctx)
 	case nodes.BinOpNode:
 		return VisitBinOpNode(node.(nodes.BinOpNode), ctx)
 	case nodes.UnaryOpNode:
@@ -122,6 +124,26 @@ func VisitVariableAssignNode(node nodes.VariableAssignNode, ctx environment.Cont
 	}
 
 	ctx.SymTable.SetSymbol(varName, value)
+	return res.Success(value)
+}
+
+func VisitVariableDeleteNode(node nodes.VariableDeleteNode, ctx environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+	posRange := node.GetPosRange()
+
+	varName := node.VarNameTok.Value.(string)
+	rawValue := ctx.SymTable.GetSymbol(varName)
+
+	if rawValue == nil {
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, fmt.Sprintf("'%s' is not defined", varName), ctx))
+	}
+
+	ctx.SymTable.RemoveSymbol(varName)
+
+	value := rawValue.(values.BaseValueInterface)
+
+	value.SetContext(ctx)
+	value.SetValuePos(posRange)
 	return res.Success(value)
 }
 

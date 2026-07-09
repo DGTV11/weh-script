@@ -72,6 +72,7 @@ var TokenTypeName = map[TokenType]string{
 
 var Keywords = []string{
 	"var",
+	"del",
 	"if",
 	"elif",
 	"else",

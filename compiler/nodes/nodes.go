@@ -85,6 +85,21 @@ func (n VariableAssignNode) String() string {
 	return fmt.Sprintf("(ASSIGN %v = %v)", n.VarNameTok, n.ValueNode)
 }
 
+type VariableDeleteNode struct {
+	BaseNode
+	VarNameTok tokens.Token
+}
+
+func NewVariableDeleteNode(varNameTok tokens.Token) VariableDeleteNode {
+	return VariableDeleteNode{
+		VarNameTok: varNameTok,
+		BaseNode:   BaseNode{PosRange: position.PositionRange{Start: varNameTok.PosRange.Start, End: varNameTok.PosRange.End}},
+	}
+}
+func (n VariableDeleteNode) String() string {
+	return fmt.Sprintf("(Delete %v)", n.VarNameTok)
+}
+
 type BinOpNode struct {
 	BaseNode
 	LeftNode  Node

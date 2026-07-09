@@ -1,4 +1,5 @@
 expr        : Keyword:var Identifier Equals expr
+            : Keyword:del Identifier
             : comp-expr ((LAnd|LOr) comp-expr)*
 
 comp-expr   : LNot comp-expr
