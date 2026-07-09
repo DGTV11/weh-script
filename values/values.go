@@ -422,11 +422,12 @@ func (self *Float) Add(other BaseValueInterface) (BaseValueInterface, *errors.Er
 	switch o := other.(type) {
 	case *Float:
 		res = &Float{Value: self.Value + o.Value}
-		res.SetContext(self.GetContext())
 	case *Integer:
 		res = &Float{Value: self.Value + float64(o.Value)}
-		res.SetContext(self.GetContext())
+	default:
+		return nil, self.IllegalOperation(other)
 	}
+	res.SetContext(self.GetContext())
 	return res, nil
 }
 func (self *Float) Sub(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
