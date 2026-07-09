@@ -144,6 +144,12 @@ func (l *Lexer) Tokenise() ([]tokens.Token, *errors.Error) {
 		case ')':
 			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeRparen, nil, &l.Position, nil))
 			l.Advance()
+		case '[':
+			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeLsquare, nil, &l.Position, nil))
+			l.Advance()
+		case ']':
+			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeRsquare, nil, &l.Position, nil))
+			l.Advance()
 		case ',':
 			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeComma, nil, &l.Position, nil))
 			l.Advance()

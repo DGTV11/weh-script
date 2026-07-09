@@ -14,14 +14,20 @@ factor      : (Plus|Minus) factor
             
 power       : call ((Pow) factor)*
 
-call        : atom (Lparen (expr (Comma expr)*)? Rparen)?
+call        : atom (
+              Lparen (expr (Comma expr)*)? Rparen
+            | Lsquare expr Rsquare
+              )*
             
 atom        : Int|Float|String|Identifier
             : Lparen expr Rparen
+            : list-expr
             : if-expr
             : for-expr
             : while-expr
             : func-def
+
+list-expr   : Lsquare (expr (Comma expr)*)? Rsquare
 
 if-expr     : Keyword:if expr Keyword:then expr
               (Keyword:elif expr Keyword:then expr)*

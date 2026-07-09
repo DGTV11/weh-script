@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"unsafe"
 
 	"github.com/DGTV11/weh-script/compiler/environment"
 	"github.com/DGTV11/weh-script/compiler/errors"
@@ -13,6 +14,8 @@ import (
 	"github.com/DGTV11/weh-script/compiler/parser"
 	"github.com/DGTV11/weh-script/compiler/values"
 )
+
+const _ = uint(1) / (uint(unsafe.Sizeof(int(0))) - 7) //ensures that size of int == size of int64
 
 func SetupGlobalymbolTable() *environment.SymbolTable {
 	GlobalSymbolTable := environment.SymbolTable{Symbols: map[string]any{}}

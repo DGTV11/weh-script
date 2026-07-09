@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/stanNthe5/stringbuf"
 
 	"github.com/DGTV11/weh-script/compiler/environment"
 	"github.com/DGTV11/weh-script/compiler/errors"
@@ -63,6 +66,8 @@ type BaseValueInterface interface {
 	LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error)
 	LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error)
 	LNot() (BaseValueInterface, *errors.Error)
+	GetItem(other BaseValueInterface) (BaseValueInterface, *errors.Error)
+	GetAttr(other BaseValueInterface) (BaseValueInterface, *errors.Error)
 	Copy() BaseValueInterface
 	IsTrue() bool
 	IllegalOperation(other BaseValueInterface) *errors.Error
@@ -145,6 +150,12 @@ func (self *BaseValue) LNot() (BaseValueInterface, *errors.Error) {
 	res := &Integer{Value: Bool2int64(!self.IsTrue())}
 	return res, nil
 }
+func (self *BaseValue) GetItem(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	return nil, self.IllegalOperation(other)
+}
+func (self *BaseValue) GetAttr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	return nil, self.IllegalOperation(other)
+}
 func (self *BaseValue) Copy() BaseValueInterface {
 	log.Fatal("No Copy method defined")
 	return nil
@@ -224,7 +235,7 @@ func (self *Integer) Mul(other BaseValueInterface) (BaseValueInterface, *errors.
 	case *Float:
 		res = &Float{Value: float64(self.Value) * o.Value}
 	case *String:
-		if int64(int(self.Value)) != self.Value || ((len(o.Value)*int(self.Value))/int(self.Value)) != len(o.Value) { //*detects integer overflow if any, based on https://www.geeksforgeeks.org/dsa/check-integer-overflow-multiplication/ with extra condition
+		if ((len(o.Value) * int(self.Value)) / int(self.Value)) != len(o.Value) { //*detects integer overflow if any, based on https://www.geeksforgeeks.org/dsa/check-integer-overflow-multiplication/
 			return nil, errors.NewRuntimeError(self.GetPosRange().Start, other.GetPosRange().End, "String length limit exceeded", self.GetContext())
 		}
 		res = &String{Value: strings.Repeat(o.Value, int(self.Value))}
@@ -588,10 +599,10 @@ func (self *String) Add(other BaseValueInterface) (BaseValueInterface, *errors.E
 	switch o := other.(type) {
 	case *String:
 		res = &String{Value: self.Value + o.Value}
-		res.SetContext(self.GetContext())
 	default:
 		return nil, self.IllegalOperation(other)
 	}
+	res.SetContext(self.GetContext())
 	return res, nil
 }
 func (self *String) Mul(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
@@ -599,7 +610,7 @@ func (self *String) Mul(other BaseValueInterface) (BaseValueInterface, *errors.E
 
 	switch o := other.(type) {
 	case *Integer:
-		if int64(int(o.Value)) != o.Value || ((len(self.Value)*int(o.Value))/int(o.Value)) != len(self.Value) { //*detects integer overflow if any, based on https://www.geeksforgeeks.org/dsa/check-integer-overflow-multiplication/ with extra condition
+		if ((len(self.Value) * int(o.Value)) / int(o.Value)) != len(self.Value) { //*detects integer overflow if any, based on https://www.geeksforgeeks.org/dsa/check-integer-overflow-multiplication/
 			return nil, errors.NewRuntimeError(self.GetPosRange().Start, other.GetPosRange().End, "String length limit exceeded", self.GetContext())
 		}
 		res = &String{Value: strings.Repeat(self.Value, int(o.Value))}
@@ -620,6 +631,88 @@ func (self *String) IsTrue() bool {
 }
 func (self *String) String() string {
 	return strconv.Quote(self.Value)
+}
+
+// *List
+type List struct {
+	BaseValue
+	Elements []BaseValueInterface
+}
+
+func (self *List) Add(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *List:
+		res = self.Copy()
+		res.(*List).Elements = append(res.(*List).Elements, o.Elements...)
+	default:
+		return nil, self.IllegalOperation(other)
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *List) Mul(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Integer:
+		if ((len(self.Elements) * int(o.Value)) / int(o.Value)) != len(self.Elements) { //*detects integer overflow if any, based on https://www.geeksforgeeks.org/dsa/check-integer-overflow-multiplication/
+			return nil, errors.NewRuntimeError(self.GetPosRange().Start, other.GetPosRange().End, "Integer length limit exceeded", self.GetContext())
+		}
+		res = &List{Elements: slices.Repeat(self.Elements, int(o.Value))}
+	default:
+		return nil, self.IllegalOperation(other)
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *List) GetItem(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Integer:
+		rawIdx := int(o.Value)
+		var idx int
+		if rawIdx < 0 {
+			idx = len(self.Elements) + rawIdx
+		} else {
+			idx = rawIdx
+		}
+
+		if idx >= len(self.Elements) || idx < 0 {
+			return nil, errors.NewRuntimeError(self.GetPosRange().Start, other.GetPosRange().End, fmt.Sprintf("Element at index %d could not be retrieved from List because index is out of bounds", rawIdx), self.GetContext())
+		}
+		res = self.Elements[idx]
+	default:
+		return nil, self.IllegalOperation(other)
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *List) Copy() BaseValueInterface {
+	copiedElements := make([]BaseValueInterface, len(self.Elements))
+	copy(copiedElements, self.Elements)
+
+	copy := &List{Elements: copiedElements}
+	copy.SetValuePos(self.GetPosRange())
+	copy.SetContext(self.GetContext())
+	return copy
+}
+func (self *List) IsTrue() bool {
+	return len(self.Elements) > 0
+}
+func (self *List) String() string {
+	// return fmt.Sprintf("%v", self.Elements)
+	sb := stringbuf.New("[")
+	for i := 0; i < len(self.Elements)-1; i++ {
+		sb.Append(self.Elements[i].String(), ", ")
+	}
+	if len(self.Elements) > 0 {
+		sb.Append(self.Elements[len(self.Elements)-1].String())
+	}
+	sb.Append("]")
+	return sb.String()
 }
 
 // *Function

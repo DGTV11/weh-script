@@ -44,6 +44,8 @@ func Visit(node nodes.Node, ctx environment.Context) *RuntimeResult {
 		return VisitNumberNode(node.(nodes.NumberNode), ctx)
 	case nodes.StringNode:
 		return VisitStringNode(node.(nodes.StringNode), ctx)
+	case nodes.ListNode:
+		return VisitListNode(node.(nodes.ListNode), ctx)
 	case nodes.VariableAccessNode:
 		return VisitVariableAccessNode(node.(nodes.VariableAccessNode), ctx)
 	case nodes.VariableAssignNode:
@@ -64,6 +66,8 @@ func Visit(node nodes.Node, ctx environment.Context) *RuntimeResult {
 		return VisitFuncDefNode(node.(nodes.FuncDefNode), ctx)
 	case nodes.CallNode:
 		return VisitCallNode(node.(nodes.CallNode), ctx)
+	case nodes.ItemAccessNode:
+		return VisitItemAccessNode(node.(nodes.ItemAccessNode), ctx)
 	default:
 		posRange := node.GetPosRange()
 		return NewRuntimeResult().Failure(errors.NewNotImplementedError(posRange.Start, posRange.End, fmt.Sprintf("No Visit function defined for node type %T", n), ctx))
@@ -80,7 +84,7 @@ func VisitNumberNode(node nodes.NumberNode, ctx environment.Context) *RuntimeRes
 	case tokens.TokenTypeFloat:
 		number = &values.Float{Value: node.Tok.Value.(float64)}
 	default:
-		return res.Failure(errors.NewNotImplementedError(node.Tok.PosRange.Start, node.Tok.PosRange.End, fmt.Sprintf("NumberNode not implemented for token type %s", tokens.TokenTypeName[node.Tok.Type]), ctx))
+		return res.Failure(errors.NewNotImplementedError(node.Tok.PosRange.Start, node.Tok.PosRange.End, fmt.Sprintf("NumberNode not implemented for token type %s", tokens.TokenTypeNameMap[node.Tok.Type]), ctx))
 	}
 
 	number.SetContext(ctx)
@@ -95,6 +99,23 @@ func VisitStringNode(node nodes.StringNode, ctx environment.Context) *RuntimeRes
 	str.SetContext(ctx)
 	str.SetValuePos(node.GetPosRange())
 	return res.Success(str)
+}
+
+func VisitListNode(node nodes.ListNode, ctx environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+	elements := make([]values.BaseValueInterface, 0, len(node.ElementNodes))
+
+	for i := 0; i < len(node.ElementNodes); i++ {
+		elements = append(elements, res.Register(Visit(node.ElementNodes[i], ctx)))
+		if res.Err != nil {
+			return res
+		}
+	}
+
+	list := &values.List{Elements: elements}
+	list.SetContext(ctx)
+	list.SetValuePos(node.GetPosRange())
+	return res.Success(list)
 }
 
 func VisitVariableAccessNode(node nodes.VariableAccessNode, ctx environment.Context) *RuntimeResult {
@@ -346,7 +367,7 @@ func VisitFuncDefNode(node nodes.FuncDefNode, ctx environment.Context) *RuntimeR
 	}
 
 	bodyNode := node.BodyNode
-	var argNames []string
+	argNames := make([]string, 0, len(node.ArgNameToks))
 	for i := 0; i < len(node.ArgNameToks); i++ {
 		argNames = append(argNames, node.ArgNameToks[i].Value.(string))
 	}
@@ -362,7 +383,6 @@ func VisitFuncDefNode(node nodes.FuncDefNode, ctx environment.Context) *RuntimeR
 
 func VisitCallNode(node nodes.CallNode, ctx environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
-	var args []values.BaseValueInterface
 
 	valueToCall := res.Register(Visit(node.NodeToCall, ctx))
 	if res.Err != nil {
@@ -371,42 +391,72 @@ func VisitCallNode(node nodes.CallNode, ctx environment.Context) *RuntimeResult 
 	valueToCall = valueToCall.Copy()
 	valueToCall.SetValuePos(node.GetPosRange())
 
+	args := make([]values.BaseValueInterface, 0, len(node.ArgNodes))
 	for i := 0; i < len(node.ArgNodes); i++ {
 		args = append(args, res.Register(Visit(node.ArgNodes[i], ctx)))
 		if res.Err != nil {
 			return res
 		}
 	}
-	returnValue := res.Register(ExecuteFunction(valueToCall.(*values.Function), args))
+	returnValue := res.Register(ExecuteCallable(valueToCall, args, node, ctx))
 	if res.Err != nil {
 		return res
 	}
 	return res.Success(returnValue)
 }
 
-// *Function Calls
-func ExecuteFunction(function *values.Function, args []values.BaseValueInterface) *RuntimeResult {
+func VisitItemAccessNode(node nodes.ItemAccessNode, ctx environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
-	posRange := function.GetPosRange()
-	parentCtx := function.GetContext()
-	newCtx := environment.Context{DisplayName: function.Name, Parent: &parentCtx, ParentEntryPos: function.GetPosRange().Start, SymTable: parentCtx.SymTable}
 
-	if len(args) > len(function.ArgNames) {
-		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, fmt.Sprintf("%d too many args passed into '%s'", len(args)-len(function.ArgNames), function.Name), parentCtx))
-	}
-	if len(args) < len(function.ArgNames) {
-		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, fmt.Sprintf("%d too few args passed into '%s'", len(function.ArgNames)-len(args), function.Name), parentCtx))
-	}
-	for i := 0; i < len(args); i++ {
-		argName := function.ArgNames[i]
-		argValue := args[i]
-		argValue.SetContext(newCtx)
-		newCtx.SymTable.SetSymbol(argName, argValue)
-	}
-
-	value := res.Register(Visit(function.BodyNode, newCtx))
+	valueToAccess := res.Register(Visit(node.NodeToAccess, ctx))
 	if res.Err != nil {
 		return res
 	}
-	return res.Success(value)
+	key := res.Register(Visit(node.KeyNode, ctx))
+	if res.Err != nil {
+		return res
+	}
+
+	result, error := valueToAccess.GetItem(key)
+
+	if error != nil {
+		return res.Failure(error)
+	}
+	result.SetContext(ctx)
+	result.SetValuePos(node.GetPosRange())
+	return res.Success(result)
+}
+
+// *Function Calls
+func ExecuteCallable(callable values.BaseValueInterface, args []values.BaseValueInterface, callNode nodes.CallNode, ctx environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	switch c := callable.(type) {
+	case *values.Function:
+		posRange := c.GetPosRange()
+		parentCtx := c.GetContext()
+		newCtx := environment.Context{DisplayName: c.Name, Parent: &parentCtx, ParentEntryPos: c.GetPosRange().Start, SymTable: parentCtx.SymTable}
+
+		if len(args) > len(c.ArgNames) {
+			return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, fmt.Sprintf("%d too many args passed into '%s'", len(args)-len(c.ArgNames), c.Name), parentCtx))
+		}
+		if len(args) < len(c.ArgNames) {
+			return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, fmt.Sprintf("%d too few args passed into '%s'", len(c.ArgNames)-len(args), c.Name), parentCtx))
+		}
+		for i := 0; i < len(args); i++ {
+			argName := c.ArgNames[i]
+			argValue := args[i]
+			argValue.SetContext(newCtx)
+			newCtx.SymTable.SetSymbol(argName, argValue)
+		}
+
+		value := res.Register(Visit(c.BodyNode, newCtx))
+		if res.Err != nil {
+			return res
+		}
+		return res.Success(value)
+	default:
+		posRange := callNode.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "Illegal operation", ctx))
+	}
 }

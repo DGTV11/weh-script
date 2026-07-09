@@ -22,6 +22,8 @@ const (
 	TokenTypeEquals
 	TokenTypeLparen
 	TokenTypeRparen
+	TokenTypeLsquare
+	TokenTypeRsquare
 	TokenTypeEE
 	TokenTypeNE
 	TokenTypeLT
@@ -39,7 +41,7 @@ const (
 	TokenTypeEOF
 )
 
-var TokenTypeName = map[TokenType]string{
+var TokenTypeNameMap = map[TokenType]string{
 	TokenTypeInt:        "TokenTypeInt",
 	TokenTypeFloat:      "TokenTypeFloat",
 	TokenTypeString:     "TokenTypeString",
@@ -53,6 +55,8 @@ var TokenTypeName = map[TokenType]string{
 	TokenTypeEquals:     "TokenTypeEquals",
 	TokenTypeLparen:     "TokenTypeLparen",
 	TokenTypeRparen:     "TokenTypeRparen",
+	TokenTypeLsquare:    "TokenTypeLsquare",
+	TokenTypeRsquare:    "TokenTypeRsquare",
 	TokenTypeEE:         "TokenTypeEE",
 	TokenTypeNE:         "TokenTypeNE",
 	TokenTypeLT:         "TokenTypeLT",
@@ -118,9 +122,7 @@ func (t Token) Matches(type_ TokenType, value any) bool {
 
 func (t Token) String() string {
 	if t.Value == nil {
-		// return fmt.Sprintf("Token{Type=%s}", TokenTypeName[t.Type])
-		return fmt.Sprintf("%s", TokenTypeName[t.Type])
+		return fmt.Sprintf("%s", TokenTypeNameMap[t.Type])
 	}
-	// return fmt.Sprintf("Token{Type=%s, Value=%v}", TokenTypeName[t.Type], t.Value)
-	return fmt.Sprintf("%s:%v", TokenTypeName[t.Type], t.Value)
+	return fmt.Sprintf("%s:%v", TokenTypeNameMap[t.Type], t.Value)
 }

@@ -53,6 +53,21 @@ func (n StringNode) String() string {
 	return fmt.Sprintf("%v", n.Tok)
 }
 
+type ListNode struct {
+	BaseNode
+	ElementNodes []Node
+}
+
+func NewListNode(elementNodes []Node, posStart *position.Position, posEnd *position.Position) ListNode {
+	return ListNode{
+		ElementNodes: elementNodes,
+		BaseNode:     BaseNode{position.PositionRange{Start: posStart, End: posEnd}},
+	}
+}
+func (n ListNode) String() string {
+	return fmt.Sprintf("%v", n.ElementNodes)
+}
+
 type VariableAccessNode struct {
 	BaseNode
 	VarNameTok tokens.Token
@@ -270,4 +285,22 @@ func NewCallNode(nodeToCall Node, argNodes []Node) CallNode {
 
 func (n CallNode) String() string {
 	return fmt.Sprintf("(CALL %v ARGS %v)", n.NodeToCall, n.ArgNodes)
+}
+
+type ItemAccessNode struct {
+	BaseNode
+	NodeToAccess Node
+	KeyNode      Node
+}
+
+func NewItemAccessNode(nodeToAccess Node, keyNode Node) ItemAccessNode {
+	return ItemAccessNode{
+		NodeToAccess: nodeToAccess,
+		KeyNode:      keyNode,
+		BaseNode:     BaseNode{PosRange: position.PositionRange{Start: nodeToAccess.GetPosRange().Start, End: keyNode.GetPosRange().End}},
+	}
+}
+
+func (n ItemAccessNode) String() string {
+	return fmt.Sprintf("(ACCESS %v KEY %v)", n.NodeToAccess, n.KeyNode)
 }

@@ -83,6 +83,62 @@ func (p *Parser) Parse() *ParseResult {
 	return res
 }
 
+func (p *Parser) ListExpr() *ParseResult {
+	res := NewParseResult()
+	var elementNodes []nodes.Node
+	posStart := p.CurrentToken.PosRange.Start.Copy()
+
+	if p.CurrentToken.Type != tokens.TokenTypeLsquare {
+		return res.Failure(
+			errors.NewInvalidSyntaxError(
+				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+				"Expected '['",
+			),
+		)
+	}
+	res.RegisterAdvance()
+	p.Advance()
+
+	if p.CurrentToken.Type == tokens.TokenTypeRsquare {
+		res.RegisterAdvance()
+		p.Advance()
+	} else {
+		elementNodes = append(elementNodes, res.Register(p.Expr()))
+		if res.Err != nil {
+			return res.Failure(
+				errors.NewInvalidSyntaxError(
+					p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+					"Expected ']', 'var', 'del', 'if', 'for', 'while', 'func', integer, float, identifier, '+', '-', '(', '[' or '!'",
+				),
+			)
+		}
+
+		for p.CurrentToken.Type == tokens.TokenTypeComma {
+			res.RegisterAdvance()
+			p.Advance()
+
+			elementNodes = append(elementNodes, res.Register(p.Expr()))
+			if res.Err != nil {
+				return res
+			}
+		}
+
+		if p.CurrentToken.Type != tokens.TokenTypeRsquare {
+			return res.Failure(
+				errors.NewInvalidSyntaxError(
+					p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+					"Expected ',' or ']'",
+				),
+			)
+		}
+
+		res.RegisterAdvance()
+		p.Advance()
+	}
+
+	return res.Success(nodes.NewListNode(elementNodes, posStart, p.CurrentToken.PosRange.End.Copy()))
+}
+
 func (p *Parser) IfExpr() *ParseResult {
 	res := NewParseResult()
 	var cases []nodes.IfCase
@@ -242,13 +298,7 @@ func (p *Parser) ForExpr() *ParseResult {
 		return res
 	}
 
-	return res.Success(nodes.NewForNode(
-		varName,
-		startValue,
-		stopValue,
-		stepValue,
-		body,
-	))
+	return res.Success(nodes.NewForNode(varName, startValue, stopValue, stepValue, body))
 }
 
 func (p *Parser) FuncDef() *ParseResult {
@@ -396,10 +446,7 @@ func (p *Parser) WhileExpr() *ParseResult {
 		return res
 	}
 
-	return res.Success(nodes.NewWhileNode(
-		condition,
-		body,
-	))
+	return res.Success(nodes.NewWhileNode(condition, body))
 }
 
 func (p *Parser) Atom() *ParseResult {
@@ -436,6 +483,12 @@ func (p *Parser) Atom() *ParseResult {
 				"Expected ')'",
 			),
 		)
+	} else if tok.Type == tokens.TokenTypeLsquare {
+		listExpr := res.Register(p.ListExpr())
+		if res.Err != nil {
+			return res
+		}
+		return res.Success(listExpr)
 	} else if tok.Matches(tokens.TokenTypeKeyword, "if") {
 		ifExpr := res.Register(p.IfExpr())
 		if res.Err != nil {
@@ -465,7 +518,7 @@ func (p *Parser) Atom() *ParseResult {
 	return res.Failure(
 		errors.NewInvalidSyntaxError(
 			tok.PosRange.Start, tok.PosRange.End,
-			"Expected integer, float, identifier, '+', '-' or '(', 'if', 'for', 'while', 'func'",
+			"Expected integer, float, identifier, '+', '-', '(', '[', 'if', 'for', 'while', or 'func'",
 		),
 	)
 }
@@ -476,55 +529,83 @@ func (p *Parser) Power() *ParseResult {
 
 func (p *Parser) Call() *ParseResult {
 	res := NewParseResult()
-	atom := res.Register(p.Atom())
+	accessNode := res.Register(p.Atom())
 	if res.Err != nil {
 		return res
 	}
 
-	if p.CurrentToken.Type == tokens.TokenTypeLparen {
-		res.RegisterAdvance()
-		p.Advance()
-		var argNodes []nodes.Node
-
-		if p.CurrentToken.Type == tokens.TokenTypeRparen {
+	for p.CurrentToken.Type == tokens.TokenTypeLparen || p.CurrentToken.Type == tokens.TokenTypeLsquare {
+		switch p.CurrentToken.Type {
+		case tokens.TokenTypeLparen:
 			res.RegisterAdvance()
 			p.Advance()
-		} else {
-			argNodes = append(argNodes, res.Register(p.Expr()))
-			if res.Err != nil {
-				return res.Failure(
-					errors.NewInvalidSyntaxError(
-						p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
-						"Expected ')', 'var', 'del', 'if', 'for', 'while', 'func', integer, float, identifier, '+', '-' or '('",
-					),
-				)
-			}
+			var argNodes []nodes.Node
 
-			for p.CurrentToken.Type == tokens.TokenTypeComma {
+			if p.CurrentToken.Type == tokens.TokenTypeRparen {
 				res.RegisterAdvance()
 				p.Advance()
-
+			} else {
 				argNodes = append(argNodes, res.Register(p.Expr()))
 				if res.Err != nil {
-					return res
+					return res.Failure(
+						errors.NewInvalidSyntaxError(
+							p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+							"Expected ')', 'var', 'del', 'if', 'for', 'while', 'func', integer, float, identifier, '+', '-', '(', '[' or '!'",
+						),
+					)
 				}
+
+				for p.CurrentToken.Type == tokens.TokenTypeComma {
+					res.RegisterAdvance()
+					p.Advance()
+
+					argNodes = append(argNodes, res.Register(p.Expr()))
+					if res.Err != nil {
+						return res
+					}
+				}
+
+				if p.CurrentToken.Type != tokens.TokenTypeRparen {
+					return res.Failure(
+						errors.NewInvalidSyntaxError(
+							p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+							"Expected ',' or ')'",
+						),
+					)
+				}
+
+				res.RegisterAdvance()
+				p.Advance()
+			}
+			accessNode = nodes.NewCallNode(accessNode, argNodes)
+		case tokens.TokenTypeLsquare:
+			res.RegisterAdvance()
+			p.Advance()
+
+			key := res.Register(p.Expr())
+			if res.Err != nil {
+				return res
 			}
 
-			if p.CurrentToken.Type != tokens.TokenTypeRparen {
+			// res.RegisterAdvance()
+			// p.Advance()
+
+			if p.CurrentToken.Type != tokens.TokenTypeRsquare {
 				return res.Failure(
 					errors.NewInvalidSyntaxError(
 						p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
-						"Expected ',' or ')'",
+						"Expected ']'",
 					),
 				)
 			}
 
 			res.RegisterAdvance()
 			p.Advance()
+
+			accessNode = nodes.NewItemAccessNode(accessNode, key)
 		}
-		return res.Success(nodes.NewCallNode(atom, argNodes))
 	}
-	return res.Success(atom)
+	return res.Success(accessNode)
 }
 
 func (p *Parser) Factor() *ParseResult {
@@ -572,7 +653,7 @@ func (p *Parser) CompExpr() *ParseResult {
 		return res.Failure(
 			errors.NewInvalidSyntaxError(
 				tok.PosRange.Start, tok.PosRange.End,
-				"Expected integer, float, identifier, '+', '-', '(', '!'",
+				"Expected integer, float, identifier, '+', '-', '(', '[' or '!'",
 			),
 		)
 	}
@@ -645,7 +726,7 @@ func (p *Parser) Expr() *ParseResult {
 		return res.Failure(
 			errors.NewInvalidSyntaxError(
 				tok.PosRange.Start, tok.PosRange.End,
-				"Expected 'var', 'del', 'if', 'for', 'while', 'func', integer, float, identifier, '+', '-' or '('",
+				"Expected 'var', 'del', 'if', 'for', 'while', 'func', integer, float, identifier, '+', '-', '(', '[' or '!'",
 			),
 		)
 	}
