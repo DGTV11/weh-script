@@ -66,6 +66,7 @@ type BaseValueInterface interface {
 	LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error)
 	LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error)
 	LNot() (BaseValueInterface, *errors.Error)
+	Length() (BaseValueInterface, *errors.Error)
 	GetItem(other BaseValueInterface) (BaseValueInterface, *errors.Error)
 	DelItem(other BaseValueInterface) (BaseValueInterface, *errors.Error)
 	GetAttr(other BaseValueInterface) (BaseValueInterface, *errors.Error)
@@ -151,6 +152,9 @@ func (self *BaseValue) LOr(other BaseValueInterface) (BaseValueInterface, *error
 func (self *BaseValue) LNot() (BaseValueInterface, *errors.Error) {
 	res := &Integer{Value: Bool2int64(!self.IsTrue())}
 	return res, nil
+}
+func (self *BaseValue) Length() (BaseValueInterface, *errors.Error) {
+	return nil, self.IllegalOperation(nil)
 }
 func (self *BaseValue) GetItem(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
 	return nil, self.IllegalOperation(other)
@@ -678,6 +682,10 @@ func (self *List) Mul(other BaseValueInterface) (BaseValueInterface, *errors.Err
 		return nil, self.IllegalOperation(other)
 	}
 	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *List) Length() (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: int64(len(self.Elements))}
 	return res, nil
 }
 func (self *List) GetItem(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
