@@ -702,10 +702,11 @@ func (self *List) GetItem(other BaseValueInterface) (BaseValueInterface, *errors
 		}
 
 		if idx >= len(self.Elements) || idx < 0 {
-			endPos := other.GetPosRange().End
-			x := ' '
-			endPos.Advance(&x) //*evil hack
-			return nil, errors.NewRuntimeError(self.GetPosRange().Start, endPos, fmt.Sprintf("Element at index %d could not be retrieved from List because index is out of bounds", rawIdx), self.GetContext())
+			// endPos := other.GetPosRange().End
+			// x := ' '
+			// endPos.Advance(&x) //*evil hack
+			// return nil, errors.NewRuntimeError(self.GetPosRange().Start, endPos, fmt.Sprintf("Element at index %d could not be retrieved from List because index is out of bounds", rawIdx), self.GetContext())
+			return nil, errors.NewRuntimeError(self.GetPosRange().Start, other.GetPosRange().End, fmt.Sprintf("Element at index %d could not be retrieved from List because index is out of bounds", rawIdx), self.GetContext())
 		}
 		res = self.Elements[idx]
 	default:
