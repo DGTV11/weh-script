@@ -1,6 +1,7 @@
 1) finish the tutorials
-  - STOPPED AT: https://www.youtube.com/watch?v=MzuzWupOFDg&list=PLZQftyCk7_SdoVexSmwy_tBgs7P0b97yD&index=11
+  - STOPPED AT: https://www.youtube.com/watch?v=MzuzWupOFDg&list=PLZQftyCk7_SdoVexSmwy_tBgs7P0b97yD&index=12
 2) finish up good goods 
+  - remember to add append() function
   - prevent var redeclaration (instead put a separate '=' rule alongside var assign in expr -> also include type info as in https://pkg.go.dev/reflect#example-TypeOf +prevent var type change in for loop)
   - add OOP+file I/0? https://craftinginterpreters.com/the-lox-language.html#classes
   - add AST optimiser?

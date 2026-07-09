@@ -112,7 +112,7 @@ func NewVariableDeleteNode(varNameTok tokens.Token) VariableDeleteNode {
 	}
 }
 func (n VariableDeleteNode) String() string {
-	return fmt.Sprintf("(Delete %v)", n.VarNameTok)
+	return fmt.Sprintf("(DELETE %v)", n.VarNameTok)
 }
 
 type BinOpNode struct {
@@ -303,4 +303,21 @@ func NewItemAccessNode(nodeToAccess Node, keyNode Node) ItemAccessNode {
 
 func (n ItemAccessNode) String() string {
 	return fmt.Sprintf("(ACCESS %v KEY %v)", n.NodeToAccess, n.KeyNode)
+}
+
+type ItemDeleteNode struct {
+	BaseNode
+	NodeToAccess Node
+	KeyNode      Node
+}
+
+func NewItemDeleteNode(nodeToAccess Node, keyNode Node) ItemDeleteNode {
+	return ItemDeleteNode{
+		NodeToAccess: nodeToAccess,
+		KeyNode:      keyNode,
+		BaseNode:     BaseNode{PosRange: position.PositionRange{Start: nodeToAccess.GetPosRange().Start, End: keyNode.GetPosRange().End}},
+	}
+}
+func (n ItemDeleteNode) String() string {
+	return fmt.Sprintf("(DELETE %v KEY %v)", n.NodeToAccess, n.KeyNode)
 }

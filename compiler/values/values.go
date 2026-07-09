@@ -67,7 +67,9 @@ type BaseValueInterface interface {
 	LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error)
 	LNot() (BaseValueInterface, *errors.Error)
 	GetItem(other BaseValueInterface) (BaseValueInterface, *errors.Error)
+	DelItem(other BaseValueInterface) (BaseValueInterface, *errors.Error)
 	GetAttr(other BaseValueInterface) (BaseValueInterface, *errors.Error)
+	DelAttr(other BaseValueInterface) (BaseValueInterface, *errors.Error)
 	Copy() BaseValueInterface
 	IsTrue() bool
 	IllegalOperation(other BaseValueInterface) *errors.Error
@@ -153,7 +155,13 @@ func (self *BaseValue) LNot() (BaseValueInterface, *errors.Error) {
 func (self *BaseValue) GetItem(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
 	return nil, self.IllegalOperation(other)
 }
+func (self *BaseValue) DelItem(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	return nil, self.IllegalOperation(other)
+}
 func (self *BaseValue) GetAttr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	return nil, self.IllegalOperation(other)
+}
+func (self *BaseValue) DelAttr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
 	return nil, self.IllegalOperation(other)
 }
 func (self *BaseValue) Copy() BaseValueInterface {
@@ -692,6 +700,33 @@ func (self *List) GetItem(other BaseValueInterface) (BaseValueInterface, *errors
 			return nil, errors.NewRuntimeError(self.GetPosRange().Start, endPos, fmt.Sprintf("Element at index %d could not be retrieved from List because index is out of bounds", rawIdx), self.GetContext())
 		}
 		res = self.Elements[idx]
+	default:
+		return nil, self.IllegalOperation(other)
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *List) DelItem(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Integer:
+		rawIdx := int(o.Value)
+		var idx int
+		if rawIdx < 0 {
+			idx = len(self.Elements) + rawIdx
+		} else {
+			idx = rawIdx
+		}
+
+		if idx >= len(self.Elements) || idx < 0 {
+			endPos := other.GetPosRange().End
+			x := ' '
+			endPos.Advance(&x) //*evil hack
+			return nil, errors.NewRuntimeError(self.GetPosRange().Start, endPos, fmt.Sprintf("Element at index %d could not be removed from List because index is out of bounds", rawIdx), self.GetContext())
+		}
+		res = self.Elements[idx]
+		self.Elements = append(self.Elements[:idx], self.Elements[idx+1:]...)
 	default:
 		return nil, self.IllegalOperation(other)
 	}

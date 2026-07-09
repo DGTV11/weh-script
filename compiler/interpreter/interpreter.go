@@ -68,6 +68,8 @@ func Visit(node nodes.Node, ctx environment.Context) *RuntimeResult {
 		return VisitCallNode(node.(nodes.CallNode), ctx)
 	case nodes.ItemAccessNode:
 		return VisitItemAccessNode(node.(nodes.ItemAccessNode), ctx)
+	case nodes.ItemDeleteNode:
+		return VisitItemDeleteNode(node.(nodes.ItemDeleteNode), ctx)
 	default:
 		posRange := node.GetPosRange()
 		return NewRuntimeResult().Failure(errors.NewNotImplementedError(posRange.Start, posRange.End, fmt.Sprintf("No Visit function defined for node type %T", n), ctx))
@@ -270,12 +272,12 @@ func VisitIfNode(node nodes.IfNode, ctx environment.Context) *RuntimeResult {
 		return res.Success(elseValue)
 	}
 
-	// return res.Success(nil)
 	return res.Success(&values.Null{})
 }
 
 func VisitForNode(node nodes.ForNode, ctx environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
+	var elements []values.BaseValueInterface
 
 	startValue := res.Register(Visit(node.StartValueNode, ctx))
 	if res.Err != nil {
@@ -321,7 +323,7 @@ func VisitForNode(node nodes.ForNode, ctx environment.Context) *RuntimeResult {
 			return res.Failure(err)
 		}
 
-		res.Register(Visit(node.BodyNode, ctx))
+		elements = append(elements, res.Register(Visit(node.BodyNode, ctx)))
 		if res.Err != nil {
 			return res
 		}
@@ -332,12 +334,15 @@ func VisitForNode(node nodes.ForNode, ctx environment.Context) *RuntimeResult {
 		}
 	}
 
-	// return res.Success(nil)
-	return res.Success(&values.Null{})
+	result := &values.List{Elements: elements}
+	result.SetContext(ctx)
+	result.SetValuePos(node.GetPosRange())
+	return res.Success(result)
 }
 
 func VisitWhileNode(node nodes.WhileNode, ctx environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
+	var elements []values.BaseValueInterface
 
 	for {
 		condition := res.Register(Visit(node.CondNode, ctx))
@@ -347,14 +352,16 @@ func VisitWhileNode(node nodes.WhileNode, ctx environment.Context) *RuntimeResul
 		if !condition.IsTrue() {
 			break
 		}
-		res.Register(Visit(node.BodyNode, ctx))
+		elements = append(elements, res.Register(Visit(node.BodyNode, ctx)))
 		if res.Err != nil {
 			return res
 		}
 	}
 
-	// return res.Success(nil)
-	return res.Success(&values.Null{})
+	result := &values.List{Elements: elements}
+	result.SetContext(ctx)
+	result.SetValuePos(node.GetPosRange())
+	return res.Success(result)
 }
 
 func VisitFuncDefNode(node nodes.FuncDefNode, ctx environment.Context) *RuntimeResult {
@@ -418,6 +425,28 @@ func VisitItemAccessNode(node nodes.ItemAccessNode, ctx environment.Context) *Ru
 	}
 
 	result, error := valueToAccess.GetItem(key)
+
+	if error != nil {
+		return res.Failure(error)
+	}
+	result.SetContext(ctx)
+	result.SetValuePos(node.GetPosRange())
+	return res.Success(result)
+}
+
+func VisitItemDeleteNode(node nodes.ItemDeleteNode, ctx environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	valueToAccess := res.Register(Visit(node.NodeToAccess, ctx))
+	if res.Err != nil {
+		return res
+	}
+	key := res.Register(Visit(node.KeyNode, ctx))
+	if res.Err != nil {
+		return res
+	}
+
+	result, error := valueToAccess.DelItem(key)
 
 	if error != nil {
 		return res.Failure(error)

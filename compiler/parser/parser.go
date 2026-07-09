@@ -718,7 +718,46 @@ func (p *Parser) Expr() *ParseResult {
 		res.RegisterAdvance()
 		p.Advance()
 
-		return res.Success(nodes.NewVariableDeleteNode(tok))
+		if p.CurrentToken.Type != tokens.TokenTypeLsquare {
+			return res.Success(nodes.NewVariableDeleteNode(tok))
+		}
+
+		var delNode nodes.Node = nodes.NewVariableAccessNode(tok)
+
+		for p.CurrentToken.Type == tokens.TokenTypeLsquare {
+			switch p.CurrentToken.Type {
+			case tokens.TokenTypeLsquare:
+				res.RegisterAdvance()
+				p.Advance()
+
+				key := res.Register(p.Expr())
+				if res.Err != nil {
+					return res
+				}
+
+				// res.RegisterAdvance()
+				// p.Advance()
+
+				if p.CurrentToken.Type != tokens.TokenTypeRsquare {
+					return res.Failure(
+						errors.NewInvalidSyntaxError(
+							p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+							"Expected ']'",
+						),
+					)
+				}
+
+				res.RegisterAdvance()
+				p.Advance()
+
+				delNode = nodes.NewItemAccessNode(delNode, key)
+			}
+		}
+		delNode = nodes.NewItemDeleteNode(delNode.(nodes.ItemAccessNode).NodeToAccess, delNode.(nodes.ItemAccessNode).KeyNode)
+		res.RegisterAdvance()
+		p.Advance()
+
+		return res.Success(delNode)
 	}
 
 	node := res.Register(p.BinOp(p.CompExpr, []tokens.TokenType{tokens.TokenTypeLAnd, tokens.TokenTypeLOr}, nil))
