@@ -730,10 +730,11 @@ func (self *List) DelItem(other BaseValueInterface) (BaseValueInterface, *errors
 		}
 
 		if idx >= len(self.Elements) || idx < 0 {
-			endPos := other.GetPosRange().End
-			x := ' '
-			endPos.Advance(&x) //*evil hack
-			return nil, errors.NewRuntimeError(self.GetPosRange().Start, endPos, fmt.Sprintf("Element at index %d could not be removed from List because index is out of bounds", rawIdx), self.GetContext())
+			// endPos := other.GetPosRange().End
+			// x := ' '
+			// endPos.Advance(&x) //*evil hack
+			// return nil, errors.NewRuntimeError(self.GetPosRange().Start, endPos, fmt.Sprintf("Element at index %d could not be removed from List because index is out of bounds", rawIdx), self.GetContext())
+			return nil, errors.NewRuntimeError(self.GetPosRange().Start, other.GetPosRange().End, fmt.Sprintf("Element at index %d could not be remove from List because index is out of bounds", rawIdx), self.GetContext())
 		}
 		res = self.Elements[idx]
 		self.Elements = append(self.Elements[:idx], self.Elements[idx+1:]...)
@@ -744,10 +745,11 @@ func (self *List) DelItem(other BaseValueInterface) (BaseValueInterface, *errors
 	return res, nil
 }
 func (self *List) Copy() BaseValueInterface {
-	copiedElements := make([]BaseValueInterface, len(self.Elements))
-	copy(copiedElements, self.Elements)
-
-	copy := &List{Elements: copiedElements}
+	// copiedElements := make([]BaseValueInterface, len(self.Elements))
+	// copy(copiedElements, self.Elements)
+	//
+	// copy := &List{Elements: copiedElements}
+	copy := &List{Elements: self.Elements}
 	copy.SetValuePos(self.GetPosRange())
 	copy.SetContext(self.GetContext())
 	return copy
@@ -768,34 +770,59 @@ func (self *List) String() string {
 	return sb.String()
 }
 
+// *BaseFunction
+type BaseFunctionInterface interface {
+	BaseValueInterface
+	DisplayName() string
+	GenerateNewContext() environment.Context
+}
+
+type BaseFunction struct {
+	BaseValue
+	Name *string
+}
+
+func (self *BaseFunction) DisplayName() string {
+	if self.Name == nil {
+		return "<anonymous>"
+	}
+	return *self.Name
+}
+
+func (self *BaseFunction) GenerateNewContext() environment.Context {
+	parentCtx := self.GetContext()
+	return environment.Context{DisplayName: self.DisplayName(), Parent: &parentCtx, ParentEntryPos: self.GetPosRange().Start, SymTable: &environment.SymbolTable{Symbols: map[string]any{}, Parent: parentCtx.SymTable}}
+}
+
 // *Function
 type Function struct {
-	BaseValue
-	Name     string
+	BaseFunction
 	BodyNode nodes.Node
 	ArgNames []string
 }
 
-func NewFunction(name *string, bodyNode nodes.Node, argNames []string) *Function {
-	var funcName string
-	if name == nil {
-		funcName = "<anonymous>"
-	} else {
-		funcName = *name
-	}
-	return &Function{
-		Name:     funcName,
-		BodyNode: bodyNode,
-		ArgNames: argNames,
-	}
-}
-
 func (self *Function) String() string {
-	return fmt.Sprintf("<function %s>", self.Name)
+	return fmt.Sprintf("<function %s>", self.DisplayName())
 }
 
 func (self *Function) Copy() BaseValueInterface {
-	copy := &Function{Name: self.Name, BodyNode: self.BodyNode, ArgNames: self.ArgNames}
+	copy := &Function{BodyNode: self.BodyNode, ArgNames: self.ArgNames, BaseFunction: BaseFunction{Name: self.Name}}
+	copy.SetValuePos(self.GetPosRange())
+	copy.SetContext(self.GetContext())
+	return copy
+}
+
+// *BuiltInFunction
+type BuiltInFunction struct {
+	BaseFunction
+}
+
+func (self *BuiltInFunction) String() string {
+	return fmt.Sprintf("<built-in function %s>", self.DisplayName())
+}
+
+func (self *BuiltInFunction) Copy() BaseValueInterface {
+	copy := &BuiltInFunction{BaseFunction: BaseFunction{Name: self.Name}}
 	copy.SetValuePos(self.GetPosRange())
 	copy.SetContext(self.GetContext())
 	return copy

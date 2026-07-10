@@ -2,6 +2,10 @@ package interpreter
 
 import (
 	"fmt"
+	"log"
+	"reflect"
+
+	"github.com/inancgumus/screen"
 
 	"github.com/DGTV11/weh-script/environment"
 	"github.com/DGTV11/weh-script/errors"
@@ -131,7 +135,7 @@ func VisitVariableAccessNode(node nodes.VariableAccessNode, ctx environment.Cont
 		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, fmt.Sprintf("'%s' is not defined", varName), ctx))
 	}
 
-	value := rawValue.(values.BaseValueInterface)
+	value := rawValue.(values.BaseValueInterface).Copy()
 
 	value.SetContext(ctx)
 	value.SetValuePos(posRange)
@@ -378,7 +382,8 @@ func VisitFuncDefNode(node nodes.FuncDefNode, ctx environment.Context) *RuntimeR
 	for i := 0; i < len(node.ArgNameToks); i++ {
 		argNames = append(argNames, node.ArgNameToks[i].Value.(string))
 	}
-	funcValue := values.NewFunction(funcName, bodyNode, argNames)
+	// funcValue := values.NewFunction(funcName, bodyNode, argNames)
+	funcValue := &values.Function{BodyNode: bodyNode, ArgNames: argNames, BaseFunction: values.BaseFunction{Name: funcName}}
 	funcValue.SetContext(ctx)
 	funcValue.SetValuePos(node.GetPosRange())
 
@@ -409,6 +414,8 @@ func VisitCallNode(node nodes.CallNode, ctx environment.Context) *RuntimeResult 
 	if res.Err != nil {
 		return res
 	}
+	returnValue.SetContext(ctx)
+	returnValue.SetValuePos(node.GetPosRange())
 	return res.Success(returnValue)
 }
 
@@ -456,36 +463,218 @@ func VisitItemDeleteNode(node nodes.ItemDeleteNode, ctx environment.Context) *Ru
 	return res.Success(result)
 }
 
-// *Function Calls
-func ExecuteCallable(callable values.BaseValueInterface, args []values.BaseValueInterface, callNode nodes.CallNode, ctx environment.Context) *RuntimeResult {
+// *Built-in Functions
+type BuiltInFunctionIdx int
+
+const (
+	BuiltInFunctionIdxPrint BuiltInFunctionIdx = iota
+	BuiltInFunctionIdxInput
+	BuiltInFunctionIdxClear
+	BuiltInFunctionIdxTypeOf
+	BuiltInFunctionIdxAppend
+	BuiltInFunctionIdxPop
+	BuiltInFunctionIdxExtend
+)
+
+var BuiltInFunctionNameToIdxMap = map[string]BuiltInFunctionIdx{
+	"print":  BuiltInFunctionIdxPrint,
+	"input":  BuiltInFunctionIdxInput,
+	"clear":  BuiltInFunctionIdxClear,
+	"typeof": BuiltInFunctionIdxTypeOf,
+	"append": BuiltInFunctionIdxAppend,
+	"pop":    BuiltInFunctionIdxPop,
+	"extend": BuiltInFunctionIdxExtend,
+}
+
+var BuiltInFunctionIdxToArgsMap = [...][]string{
+	BuiltInFunctionIdxPrint:  []string{"value"},
+	BuiltInFunctionIdxInput:  []string{},
+	BuiltInFunctionIdxClear:  []string{},
+	BuiltInFunctionIdxTypeOf: []string{"value"},
+	BuiltInFunctionIdxAppend: []string{"list", "value"},
+	BuiltInFunctionIdxPop:    []string{"list", "idx"},
+	BuiltInFunctionIdxExtend: []string{"list_a", "list_b"},
+}
+
+var BuiltInFunctionIdxToFuncMap = [...]func(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult{
+	BuiltInFunctionIdxPrint:  ExecutePrint,
+	BuiltInFunctionIdxInput:  ExecuteInput,
+	BuiltInFunctionIdxClear:  ExecuteClear,
+	BuiltInFunctionIdxTypeOf: ExecuteTypeOf,
+	BuiltInFunctionIdxAppend: ExecuteAppend,
+	BuiltInFunctionIdxPop:    ExecutePop,
+	BuiltInFunctionIdxExtend: ExecuteExtend,
+}
+
+func ExecutePrint(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+	fmt.Println(execCtx.SymTable.GetSymbol("value"))
+	return NewRuntimeResult().Success(&values.Null{})
+}
+
+func ExecuteInput(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+	var input string
+	fmt.Scanln(&input)
+	return NewRuntimeResult().Success(&values.String{Value: input})
+}
+
+func ExecuteClear(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+	screen.Clear()
+	screen.MoveTopLeft()
+	return NewRuntimeResult().Success(&values.Null{})
+}
+
+func ExecuteTypeOf(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+	value := execCtx.SymTable.GetSymbol("value")
+	return NewRuntimeResult().Success(&values.String{Value: reflect.TypeOf(value).Elem().Name()})
+}
+
+func ExecuteAppend(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
+
+	list := execCtx.SymTable.GetSymbol("list")
+	value := execCtx.SymTable.GetSymbol("value")
+
+	switch l := list.(type) {
+	case *values.List:
+		l.Elements = append(l.Elements, value.(values.BaseValueInterface))
+	default:
+		posRange := callable.GetPosRange()
+		return NewRuntimeResult().Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "First argument must be List", execCtx))
+	}
+
+	return res.Success(&values.Null{})
+}
+
+func ExecutePop(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+	posRange := callable.GetPosRange()
+
+	list, ok := execCtx.SymTable.GetSymbol("list").(*values.List)
+	if ok == false {
+		return NewRuntimeResult().Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "First argument must be List", execCtx))
+	}
+	rawIdxVal, ok := execCtx.SymTable.GetSymbol("idx").(*values.Integer)
+	if ok == false {
+		return NewRuntimeResult().Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "Second argument must be Integer", execCtx))
+	}
+	rawIdx := int(rawIdxVal.Value)
+
+	var idx int
+	if rawIdx < 0 {
+		idx = len(list.Elements) + rawIdx
+	} else {
+		idx = rawIdx
+	}
+
+	if idx >= len(list.Elements) || idx < 0 {
+		// endPos := other.GetPosRange().End
+		// x := ' '
+		// endPos.Advance(&x) //*evil hack
+		// return nil, errors.NewRuntimeError(self.GetPosRange().Start, endPos, fmt.Sprintf("Element at index %d could not be removed from List because index is out of bounds", rawIdx), self.GetContext())
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, fmt.Sprintf("Element at index %d could not be remove from List because index is out of bounds", rawIdx), execCtx))
+	}
+	element := list.Elements[idx]
+	list.Elements = append(list.Elements[:idx], list.Elements[idx+1:]...)
+
+	return res.Success(element)
+}
+
+func ExecuteExtend(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+	posRange := callable.GetPosRange()
+
+	listA, ok := execCtx.SymTable.GetSymbol("list_a").(*values.List)
+	if ok == false {
+		return NewRuntimeResult().Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "First argument must be List", execCtx))
+	}
+	listB, ok := execCtx.SymTable.GetSymbol("list_b").(*values.List)
+	if ok == false {
+		return NewRuntimeResult().Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "Second argument must be List", execCtx))
+	}
+
+	listA.Elements = append(listA.Elements, listB.Elements...)
+
+	return res.Success(&values.Null{})
+}
+
+// *Function Calls
+func CheckArgs(callable values.BaseFunctionInterface, argNames []string, args []values.BaseValueInterface) *RuntimeResult {
+	res := NewRuntimeResult()
+	posRange := callable.GetPosRange()
+
+	if len(args) > len(argNames) {
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, fmt.Sprintf("%d too many args passed into '%s'", len(args)-len(argNames), callable.DisplayName()), callable.GetContext()))
+	}
+	if len(args) < len(argNames) {
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, fmt.Sprintf("%d too few args passed into '%s'", len(argNames)-len(args), callable.DisplayName()), callable.GetContext()))
+	}
+
+	return res.Success(nil)
+}
+
+func PopulateArgs(callable values.BaseFunctionInterface, argNames []string, args []values.BaseValueInterface, execCtx environment.Context) {
+	for i := 0; i < len(args); i++ {
+		argName := argNames[i]
+		argValue := args[i]
+		argValue.SetContext(execCtx)
+		execCtx.SymTable.SetSymbol(argName, argValue)
+	}
+}
+
+func CheckAndPopulateArgs(callable values.BaseFunctionInterface, argNames []string, args []values.BaseValueInterface, execCtx environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+	res.Register(CheckArgs(callable, argNames, args))
+	if res.Err != nil {
+		return res
+	}
+	PopulateArgs(callable, argNames, args, execCtx)
+	return res.Success(nil)
+}
+
+func ExecuteCallable(callableValue values.BaseValueInterface, args []values.BaseValueInterface, callNode nodes.CallNode, ctx environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	callable, ok := callableValue.(values.BaseFunctionInterface)
+	if ok == false {
+		goto invalidType
+	}
 
 	switch c := callable.(type) {
 	case *values.Function:
-		posRange := c.GetPosRange()
-		parentCtx := c.GetContext()
-		newCtx := environment.Context{DisplayName: c.Name, Parent: &parentCtx, ParentEntryPos: c.GetPosRange().Start, SymTable: parentCtx.SymTable}
+		execCtx := c.GenerateNewContext()
 
-		if len(args) > len(c.ArgNames) {
-			return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, fmt.Sprintf("%d too many args passed into '%s'", len(args)-len(c.ArgNames), c.Name), parentCtx))
-		}
-		if len(args) < len(c.ArgNames) {
-			return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, fmt.Sprintf("%d too few args passed into '%s'", len(c.ArgNames)-len(args), c.Name), parentCtx))
-		}
-		for i := 0; i < len(args); i++ {
-			argName := c.ArgNames[i]
-			argValue := args[i]
-			argValue.SetContext(newCtx)
-			newCtx.SymTable.SetSymbol(argName, argValue)
+		res.Register(CheckAndPopulateArgs(c, c.ArgNames, args, execCtx))
+		if res.Err != nil {
+			return res
 		}
 
-		value := res.Register(Visit(c.BodyNode, newCtx))
+		value := res.Register(Visit(c.BodyNode, execCtx))
+		if res.Err != nil {
+			return res
+		}
+		return res.Success(value)
+	case *values.BuiltInFunction:
+		execCtx := c.GenerateNewContext()
+
+		methodIdx, ok := BuiltInFunctionNameToIdxMap[c.DisplayName()]
+		if ok == false {
+			log.Fatalf("No built-in function '%s' defined", c.Name)
+		}
+
+		res.Register(CheckAndPopulateArgs(c, BuiltInFunctionIdxToArgsMap[methodIdx], args, execCtx))
+		if res.Err != nil {
+			return res
+		}
+
+		value := res.Register(BuiltInFunctionIdxToFuncMap[methodIdx](c, execCtx))
 		if res.Err != nil {
 			return res
 		}
 		return res.Success(value)
 	default:
-		posRange := callNode.GetPosRange()
-		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "Illegal operation", ctx))
+		goto invalidType
 	}
+invalidType:
+	nodePosRange := callNode.GetPosRange()
+	return res.Failure(errors.NewRuntimeError(nodePosRange.Start, nodePosRange.End, "Illegal operation", ctx))
 }

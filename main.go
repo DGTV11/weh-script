@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"log"
+	"maps"
 	"os"
 	"reflect"
 	"unsafe"
@@ -23,9 +24,15 @@ const _ = uint(1) / (uint(unsafe.Sizeof(int(0))) - 7) //ensures that size of int
 func SetupGlobalSymbolTable() *environment.SymbolTable {
 	GlobalSymbolTable := environment.SymbolTable{Symbols: map[string]any{}}
 
+	//*Load constants
 	GlobalSymbolTable.SetSymbol("null", &values.Null{})
 	GlobalSymbolTable.SetSymbol("true", &values.Integer{Value: 1})
 	GlobalSymbolTable.SetSymbol("false", &values.Integer{Value: 0})
+
+	//*Load functions
+	for funcName := range maps.Keys(interpreter.BuiltInFunctionNameToIdxMap) {
+		GlobalSymbolTable.SetSymbol(funcName, &values.BuiltInFunction{BaseFunction: values.BaseFunction{Name: &funcName}})
+	}
 
 	return &GlobalSymbolTable
 }

@@ -1,12 +1,13 @@
 1) finish the tutorials
-  - STOPPED AT: https://www.youtube.com/watch?v=MzuzWupOFDg&list=PLZQftyCk7_SdoVexSmwy_tBgs7P0b97yD&index=12
+  - STOPPED AT: https://www.youtube.com/watch?v=MzuzWupOFDg&list=PLZQftyCk7_SdoVexSmwy_tBgs7P0b97yD&index=13
 2) finish up good goods 
-  - remember to add append() function in std for interpreter
   - add file I/0
+  - add type casting
   - move 'var' and 'del' logic right above call
     - prevent var redeclaration (instead put a separate '=' rule alongside var assign in expr -> 
       - make variable assign/update node
       - make item assign/update node
+      - (or overhaul into single chain assign/update with the help of expr + call chain)
   - add OOP? https://craftinginterpreters.com/the-lox-language.html#classes
     - this means u need to add get and del for member access operator `.`
 
