@@ -10,9 +10,10 @@
       - (or overhaul into single chain assign/update with the help of expr + call chain)
   - add OOP? https://craftinginterpreters.com/the-lox-language.html#classes
     - this means u need to add get and del for member access operator `.`
-
+  - add import statements into "immutable objects" (?!? if u do this for compatibility u need to make stdlib IN `.weh` files!)
   - add AST optimiser?
   - saner go CLI!
+  - explain syntax/CLI in TODO or smth
 2) make bytecode compiler + reg-based VM (give option to choose between AST tree-walk interpreter and bytecode interpreter, especially when running .weh script)
 3) make language bundled thingy (which can be compiled to portable executable) or stick with bytecode files
 
