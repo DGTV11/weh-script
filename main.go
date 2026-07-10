@@ -58,14 +58,15 @@ func Run(fileName string, text string, globalSymbolTable *environment.SymbolTabl
 }
 
 var text string
-var bytecodemode bool
+var bytecodeMode bool
 
 func main() {
-	fmt.Println("WehScript Programming Language")
 
-	pflag.BoolVar(&bytecodemode, "bytecodemode", false, "Enable bytecode mode") //after implementing bytecode VM: default this to true and make non-bytecode mode legacy
+	pflag.BoolVar(&bytecodeMode, "bytecode-mode", false, "Enable bytecode mode") //after implementing bytecode VM: default this to true and make non-bytecode mode legacy
 	pflag.Parse()
-	if bytecodemode == true {
+
+	fmt.Println("WehScript Programming Language")
+	if bytecodeMode == true {
 		log.Fatal("Bytecode VM not implemented")
 	} else {
 		globalSymbolTable := SetupGlobalSymbolTable()
