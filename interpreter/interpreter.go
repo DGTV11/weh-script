@@ -464,46 +464,40 @@ func VisitItemDeleteNode(node nodes.ItemDeleteNode, ctx environment.Context) *Ru
 }
 
 // *Built-in Functions
-type BuiltInFunctionIdx int
-
-const (
-	BuiltInFunctionIdxPrint BuiltInFunctionIdx = iota
-	BuiltInFunctionIdxInput
-	BuiltInFunctionIdxClear
-	BuiltInFunctionIdxTypeOf
-	BuiltInFunctionIdxAppend
-	BuiltInFunctionIdxPop
-	BuiltInFunctionIdxExtend
-)
-
-var BuiltInFunctionNameToIdxMap = map[string]BuiltInFunctionIdx{
-	"print":  BuiltInFunctionIdxPrint,
-	"input":  BuiltInFunctionIdxInput,
-	"clear":  BuiltInFunctionIdxClear,
-	"typeof": BuiltInFunctionIdxTypeOf,
-	"append": BuiltInFunctionIdxAppend,
-	"pop":    BuiltInFunctionIdxPop,
-	"extend": BuiltInFunctionIdxExtend,
+type BuiltInFunctionData struct {
+	FunctionRef func(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult
+	Args        []string
 }
 
-var BuiltInFunctionIdxToArgsMap = [...][]string{
-	BuiltInFunctionIdxPrint:  []string{"value"},
-	BuiltInFunctionIdxInput:  []string{},
-	BuiltInFunctionIdxClear:  []string{},
-	BuiltInFunctionIdxTypeOf: []string{"value"},
-	BuiltInFunctionIdxAppend: []string{"list", "value"},
-	BuiltInFunctionIdxPop:    []string{"list", "idx"},
-	BuiltInFunctionIdxExtend: []string{"list_a", "list_b"},
-}
-
-var BuiltInFunctionIdxToFuncMap = [...]func(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult{
-	BuiltInFunctionIdxPrint:  ExecutePrint,
-	BuiltInFunctionIdxInput:  ExecuteInput,
-	BuiltInFunctionIdxClear:  ExecuteClear,
-	BuiltInFunctionIdxTypeOf: ExecuteTypeOf,
-	BuiltInFunctionIdxAppend: ExecuteAppend,
-	BuiltInFunctionIdxPop:    ExecutePop,
-	BuiltInFunctionIdxExtend: ExecuteExtend,
+var BuiltInFunctionTable = map[string]BuiltInFunctionData{
+	"print": {
+		FunctionRef: ExecutePrint,
+		Args:        []string{"value"},
+	},
+	"input": {
+		FunctionRef: ExecuteInput,
+		Args:        []string{},
+	},
+	"clear": {
+		FunctionRef: ExecuteClear,
+		Args:        []string{},
+	},
+	"typeof": {
+		FunctionRef: ExecuteTypeOf,
+		Args:        []string{"value"},
+	},
+	"append": {
+		FunctionRef: ExecuteAppend,
+		Args:        []string{"list", "value"},
+	},
+	"pop": {
+		FunctionRef: ExecutePop,
+		Args:        []string{"list", "idx"},
+	},
+	"extend": {
+		FunctionRef: ExecuteExtend,
+		Args:        []string{"list_a", "list_b"},
+	},
 }
 
 func ExecutePrint(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
@@ -656,17 +650,17 @@ func ExecuteCallable(callableValue values.BaseValueInterface, args []values.Base
 	case *values.BuiltInFunction:
 		execCtx := c.GenerateNewContext()
 
-		methodIdx, ok := BuiltInFunctionNameToIdxMap[c.DisplayName()]
+		functionData, ok := BuiltInFunctionTable[c.DisplayName()]
 		if ok == false {
 			log.Fatalf("No built-in function '%s' defined", c.Name)
 		}
 
-		res.Register(CheckAndPopulateArgs(c, BuiltInFunctionIdxToArgsMap[methodIdx], args, execCtx))
+		res.Register(CheckAndPopulateArgs(c, functionData.Args, args, execCtx))
 		if res.Err != nil {
 			return res
 		}
 
-		value := res.Register(BuiltInFunctionIdxToFuncMap[methodIdx](c, execCtx))
+		value := res.Register(functionData.FunctionRef(c, execCtx))
 		if res.Err != nil {
 			return res
 		}

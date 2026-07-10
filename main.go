@@ -30,7 +30,7 @@ func SetupGlobalSymbolTable() *environment.SymbolTable {
 	GlobalSymbolTable.SetSymbol("false", &values.Integer{Value: 0})
 
 	//*Load functions
-	for funcName := range maps.Keys(interpreter.BuiltInFunctionNameToIdxMap) {
+	for funcName := range maps.Keys(interpreter.BuiltInFunctionTable) {
 		GlobalSymbolTable.SetSymbol(funcName, &values.BuiltInFunction{BaseFunction: values.BaseFunction{Name: &funcName}})
 	}
 
