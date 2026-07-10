@@ -129,29 +129,15 @@ func (self *BaseValue) Lte(other BaseValueInterface) (BaseValueInterface, *error
 func (self *BaseValue) Gte(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
 	return nil, self.IllegalOperation(other)
 }
-
-//	func (self *BaseValue) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
-//		return nil, self.IllegalOperation(other)
-//	}
-//
-//	func (self *BaseValue) LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
-//		return nil, self.IllegalOperation(other)
-//	}
-//
-//	func (self *BaseValue) LNot() (BaseValueInterface, *errors.Error) {
-//		return nil, self.IllegalOperation(nil)
-//	}
 func (self *BaseValue) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
-	res := &Integer{Value: Bool2int64(self.IsTrue() && other.IsTrue())}
-	return res, nil
+	return nil, self.IllegalOperation(other)
 }
+
 func (self *BaseValue) LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
-	res := &Integer{Value: Bool2int64(self.IsTrue() || other.IsTrue())}
-	return res, nil
+	return nil, self.IllegalOperation(other)
 }
 func (self *BaseValue) LNot() (BaseValueInterface, *errors.Error) {
-	res := &Integer{Value: Bool2int64(!self.IsTrue())}
-	return res, nil
+	return nil, self.IllegalOperation(nil)
 }
 func (self *BaseValue) Length() (BaseValueInterface, *errors.Error) {
 	return nil, self.IllegalOperation(nil)
@@ -382,21 +368,18 @@ func (self *Integer) Gte(other BaseValueInterface) (BaseValueInterface, *errors.
 	res.SetContext(self.GetContext())
 	return res, nil
 }
-
-//	func (self *Integer) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
-//		res := &Integer{Value: Bool2int64(self.IsTrue() && other.IsTrue())}
-//		return res, nil
-//	}
-//
-//	func (self *Integer) LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
-//		res := &Integer{Value: Bool2int64(self.IsTrue() || other.IsTrue())}
-//		return res, nil
-//	}
-//
-//	func (self *Integer) LNot() (BaseValueInterface, *errors.Error) {
-//		res := &Integer{Value: Bool2int64(!self.IsTrue())}
-//		return res, nil
-//	}
+func (self *Integer) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(self.IsTrue() && other.IsTrue())}
+	return res, nil
+}
+func (self *Integer) LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(self.IsTrue() || other.IsTrue())}
+	return res, nil
+}
+func (self *Integer) LNot() (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(!self.IsTrue())}
+	return res, nil
+}
 func (self *Integer) Copy() BaseValueInterface {
 	copy := &Integer{Value: self.Value}
 	copy.SetValuePos(self.GetPosRange())
@@ -577,21 +560,18 @@ func (self *Float) Gte(other BaseValueInterface) (BaseValueInterface, *errors.Er
 	res.SetContext(self.GetContext())
 	return res, nil
 }
-
-//	func (self *Float) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
-//		res := &Integer{Value: Bool2int64(self.IsTrue() && other.IsTrue())}
-//		return res, nil
-//	}
-//
-//	func (self *Float) LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
-//		res := &Integer{Value: Bool2int64(self.IsTrue() || other.IsTrue())}
-//		return res, nil
-//	}
-//
-//	func (self *Float) LNot() (BaseValueInterface, *errors.Error) {
-//		res := &Integer{Value: Bool2int64(!self.IsTrue())}
-//		return res, nil
-//	}
+func (self *Float) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(self.IsTrue() && other.IsTrue())}
+	return res, nil
+}
+func (self *Float) LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(self.IsTrue() || other.IsTrue())}
+	return res, nil
+}
+func (self *Float) LNot() (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(!self.IsTrue())}
+	return res, nil
+}
 func (self *Float) Copy() BaseValueInterface {
 	copy := &Float{Value: self.Value}
 	copy.SetValuePos(self.GetPosRange())
@@ -636,6 +616,31 @@ func (self *String) Mul(other BaseValueInterface) (BaseValueInterface, *errors.E
 		return nil, self.IllegalOperation(other)
 	}
 	res.SetContext(self.GetContext())
+	return res, nil
+}
+
+//	func (self *String) Add(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+//		var res BaseValueInterface = nil
+//
+//		switch o := other.(type) {
+//		case *String:
+//			res = &String{Value: self.Value + o.Value}
+//		default:
+//			return nil, self.IllegalOperation(other)
+//		}
+//		res.SetContext(self.GetContext())
+//		return res, nil
+//	}
+func (self *String) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(self.IsTrue() && other.IsTrue())}
+	return res, nil
+}
+func (self *String) LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(self.IsTrue() || other.IsTrue())}
+	return res, nil
+}
+func (self *String) LNot() (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(!self.IsTrue())}
 	return res, nil
 }
 func (self *String) Copy() BaseValueInterface {
@@ -683,6 +688,18 @@ func (self *List) Mul(other BaseValueInterface) (BaseValueInterface, *errors.Err
 		return nil, self.IllegalOperation(other)
 	}
 	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *List) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(self.IsTrue() && other.IsTrue())}
+	return res, nil
+}
+func (self *List) LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(self.IsTrue() || other.IsTrue())}
+	return res, nil
+}
+func (self *List) LNot() (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(!self.IsTrue())}
 	return res, nil
 }
 func (self *List) Length() (BaseValueInterface, *errors.Error) {
@@ -788,7 +805,6 @@ func (self *BaseFunction) DisplayName() string {
 	}
 	return *self.Name
 }
-
 func (self *BaseFunction) GenerateNewContext() environment.Context {
 	parentCtx := self.GetContext()
 	return environment.Context{DisplayName: self.DisplayName(), Parent: &parentCtx, ParentEntryPos: self.GetPosRange().Start, SymTable: &environment.SymbolTable{Symbols: map[string]any{}, Parent: parentCtx.SymTable}}
@@ -801,15 +817,26 @@ type Function struct {
 	ArgNames []string
 }
 
-func (self *Function) String() string {
-	return fmt.Sprintf("<function %s>", self.DisplayName())
+func (self *Function) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(self.IsTrue() && other.IsTrue())}
+	return res, nil
 }
-
+func (self *Function) LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(self.IsTrue() || other.IsTrue())}
+	return res, nil
+}
+func (self *Function) LNot() (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(!self.IsTrue())}
+	return res, nil
+}
 func (self *Function) Copy() BaseValueInterface {
 	copy := &Function{BodyNode: self.BodyNode, ArgNames: self.ArgNames, BaseFunction: BaseFunction{Name: self.Name}}
 	copy.SetValuePos(self.GetPosRange())
 	copy.SetContext(self.GetContext())
 	return copy
+}
+func (self *Function) String() string {
+	return fmt.Sprintf("<function %s>", self.DisplayName())
 }
 
 // *BuiltInFunction
@@ -817,13 +844,24 @@ type BuiltInFunction struct {
 	BaseFunction
 }
 
-func (self *BuiltInFunction) String() string {
-	return fmt.Sprintf("<built-in function %s>", self.DisplayName())
+func (self *BuiltInFunction) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(self.IsTrue() && other.IsTrue())}
+	return res, nil
 }
-
+func (self *BuiltInFunction) LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(self.IsTrue() || other.IsTrue())}
+	return res, nil
+}
+func (self *BuiltInFunction) LNot() (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(!self.IsTrue())}
+	return res, nil
+}
 func (self *BuiltInFunction) Copy() BaseValueInterface {
 	copy := &BuiltInFunction{BaseFunction: BaseFunction{Name: self.Name}}
 	copy.SetValuePos(self.GetPosRange())
 	copy.SetContext(self.GetContext())
 	return copy
+}
+func (self *BuiltInFunction) String() string {
+	return fmt.Sprintf("<built-in function %s>", self.DisplayName())
 }
