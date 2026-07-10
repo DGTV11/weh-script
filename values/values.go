@@ -618,19 +618,30 @@ func (self *String) Mul(other BaseValueInterface) (BaseValueInterface, *errors.E
 	res.SetContext(self.GetContext())
 	return res, nil
 }
+func (self *String) Eq(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
 
-//	func (self *String) Add(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
-//		var res BaseValueInterface = nil
-//
-//		switch o := other.(type) {
-//		case *String:
-//			res = &String{Value: self.Value + o.Value}
-//		default:
-//			return nil, self.IllegalOperation(other)
-//		}
-//		res.SetContext(self.GetContext())
-//		return res, nil
-//	}
+	switch o := other.(type) {
+	case *String:
+		res = &Integer{Value: Bool2int64(self.Value == o.Value)}
+	default:
+		return nil, self.IllegalOperation(other)
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *String) Ne(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *String:
+		res = &Integer{Value: Bool2int64(self.Value != o.Value)}
+	default:
+		return nil, self.IllegalOperation(other)
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
 func (self *String) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
 	res := &Integer{Value: Bool2int64(self.IsTrue() && other.IsTrue())}
 	return res, nil
@@ -751,7 +762,7 @@ func (self *List) DelItem(other BaseValueInterface) (BaseValueInterface, *errors
 			// x := ' '
 			// endPos.Advance(&x) //*evil hack
 			// return nil, errors.NewRuntimeError(self.GetPosRange().Start, endPos, fmt.Sprintf("Element at index %d could not be removed from List because index is out of bounds", rawIdx), self.GetContext())
-			return nil, errors.NewRuntimeError(self.GetPosRange().Start, other.GetPosRange().End, fmt.Sprintf("Element at index %d could not be remove from List because index is out of bounds", rawIdx), self.GetContext())
+			return nil, errors.NewRuntimeError(self.GetPosRange().Start, other.GetPosRange().End, fmt.Sprintf("Element at index %d could not be removed from List because index is out of bounds", rawIdx), self.GetContext())
 		}
 		res = self.Elements[idx]
 		self.Elements = append(self.Elements[:idx], self.Elements[idx+1:]...)

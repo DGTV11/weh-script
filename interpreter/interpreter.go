@@ -135,7 +135,8 @@ func VisitVariableAccessNode(node nodes.VariableAccessNode, ctx environment.Cont
 		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, fmt.Sprintf("'%s' is not defined", varName), ctx))
 	}
 
-	value := rawValue.(values.BaseValueInterface).Copy()
+	// value := rawValue.(values.BaseValueInterface).Copy() //BUG: breaks list operations
+	value := rawValue.(values.BaseValueInterface)
 
 	value.SetContext(ctx)
 	value.SetValuePos(posRange)
@@ -486,6 +487,10 @@ var BuiltInFunctionTable = map[string]BuiltInFunctionData{
 		FunctionRef: ExecuteTypeOf,
 		Args:        []string{"value"},
 	},
+	"len": {
+		FunctionRef: ExecuteLen,
+		Args:        []string{"list"},
+	},
 	"append": {
 		FunctionRef: ExecuteAppend,
 		Args:        []string{"list", "value"},
@@ -522,18 +527,32 @@ func ExecuteTypeOf(callable values.BaseFunctionInterface, execCtx environment.Co
 	return NewRuntimeResult().Success(&values.String{Value: reflect.TypeOf(value).Elem().Name()})
 }
 
+func ExecuteLen(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	value := execCtx.SymTable.GetSymbol("list").(values.BaseValueInterface)
+
+	length, err := value.Length()
+	if err != nil {
+		return res.Failure(err)
+	}
+
+	return res.Success(length)
+}
+
 func ExecuteAppend(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
-	list := execCtx.SymTable.GetSymbol("list")
-	value := execCtx.SymTable.GetSymbol("value")
+	list := execCtx.SymTable.GetSymbol("list").(values.BaseValueInterface)
+	value := execCtx.SymTable.GetSymbol("value").(values.BaseValueInterface)
 
 	switch l := list.(type) {
 	case *values.List:
-		l.Elements = append(l.Elements, value.(values.BaseValueInterface))
+		l.Elements = append(l.Elements, value)
 	default:
-		posRange := callable.GetPosRange()
-		return NewRuntimeResult().Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "First argument must be List", execCtx))
+		// posRange := callable.GetPosRange()
+		posRange := list.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "First argument must be List", execCtx))
 	}
 
 	return res.Success(&values.Null{})
@@ -541,49 +560,44 @@ func ExecuteAppend(callable values.BaseFunctionInterface, execCtx environment.Co
 
 func ExecutePop(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
-	posRange := callable.GetPosRange()
+	// posRange := callable.GetPosRange()
 
-	list, ok := execCtx.SymTable.GetSymbol("list").(*values.List)
+	listValue := execCtx.SymTable.GetSymbol("list").(values.BaseValueInterface)
+	list, ok := listValue.(*values.List)
 	if ok == false {
-		return NewRuntimeResult().Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "First argument must be List", execCtx))
+		posRange := listValue.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "First argument must be List", execCtx))
 	}
-	rawIdxVal, ok := execCtx.SymTable.GetSymbol("idx").(*values.Integer)
+	idxValue := execCtx.SymTable.GetSymbol("idx").(values.BaseValueInterface)
+	idx, ok := idxValue.(*values.Integer)
 	if ok == false {
-		return NewRuntimeResult().Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "Second argument must be Integer", execCtx))
-	}
-	rawIdx := int(rawIdxVal.Value)
-
-	var idx int
-	if rawIdx < 0 {
-		idx = len(list.Elements) + rawIdx
-	} else {
-		idx = rawIdx
+		posRange := idxValue.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "Second argument must be Integer", execCtx))
 	}
 
-	if idx >= len(list.Elements) || idx < 0 {
-		// endPos := other.GetPosRange().End
-		// x := ' '
-		// endPos.Advance(&x) //*evil hack
-		// return nil, errors.NewRuntimeError(self.GetPosRange().Start, endPos, fmt.Sprintf("Element at index %d could not be removed from List because index is out of bounds", rawIdx), self.GetContext())
-		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, fmt.Sprintf("Element at index %d could not be remove from List because index is out of bounds", rawIdx), execCtx))
+	element, err := list.DelItem(idx)
+	if err != nil {
+		return res.Failure(err)
 	}
-	element := list.Elements[idx]
-	list.Elements = append(list.Elements[:idx], list.Elements[idx+1:]...)
 
 	return res.Success(element)
 }
 
 func ExecuteExtend(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
-	posRange := callable.GetPosRange()
+	// posRange := callable.GetPosRange()
 
-	listA, ok := execCtx.SymTable.GetSymbol("list_a").(*values.List)
+	listAValue := execCtx.SymTable.GetSymbol("list_a").(values.BaseValueInterface)
+	listA, ok := listAValue.(*values.List)
 	if ok == false {
-		return NewRuntimeResult().Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "First argument must be List", execCtx))
+		posRange := listAValue.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "First argument must be List", execCtx))
 	}
-	listB, ok := execCtx.SymTable.GetSymbol("list_b").(*values.List)
+	listBValue := execCtx.SymTable.GetSymbol("list_b").(values.BaseValueInterface)
+	listB, ok := listBValue.(*values.List)
 	if ok == false {
-		return NewRuntimeResult().Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "Second argument must be List", execCtx))
+		posRange := listBValue.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "Second argument must be List", execCtx))
 	}
 
 	listA.Elements = append(listA.Elements, listB.Elements...)

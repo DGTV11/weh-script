@@ -88,7 +88,7 @@ func main() {
 				fmt.Println(err)
 			} else if reflect.TypeOf(res).String() != "*values.Null" {
 				fmt.Println(res)
-				globalSymbolTable.SetSymbol("_", res)
+				globalSymbolTable.SetSymbol("_", res) //TODO: update '_' variable after every expression
 			}
 		}
 	}
