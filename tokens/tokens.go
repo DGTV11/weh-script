@@ -41,7 +41,7 @@ const (
 	TokenTypeEOF
 )
 
-var TokenTypeNameMap = map[TokenType]string{
+var TokenTypeNameMap = [...]string{
 	TokenTypeInt:        "TokenTypeInt",
 	TokenTypeFloat:      "TokenTypeFloat",
 	TokenTypeString:     "TokenTypeString",
