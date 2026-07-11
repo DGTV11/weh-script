@@ -13,11 +13,11 @@ func NewPosition(index int, line int, column int, fileName string, fileText stri
 }
 
 func (p *Position) Advance(currentChar *rune) {
-	p.Index += 1
-	p.Column += 1
+	p.Index++
+	p.Column++
 
 	if currentChar != nil && *currentChar == '\n' {
-		p.Line += 1
+		p.Line++
 		p.Column = 0
 	}
 }
