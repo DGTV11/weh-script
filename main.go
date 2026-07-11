@@ -6,9 +6,10 @@ import (
 	"log"
 	"maps"
 	"os"
-	// "reflect"
 	"strings"
+	"time"
 	"unsafe"
+	// "reflect"
 
 	"github.com/spf13/pflag"
 
@@ -60,10 +61,14 @@ func Run(fileName string, text string, globalSymbolTable *environment.SymbolTabl
 
 var text string
 var bytecodeMode bool
+var viewExecutionTimes bool
+var tmpTime time.Time
+var tmpElapsed time.Duration
 
 func main() {
 
 	pflag.BoolVar(&bytecodeMode, "bytecode-mode", false, "Enable bytecode mode") //after implementing bytecode VM: default this to true and make non-bytecode mode legacy
+	pflag.BoolVar(&viewExecutionTimes, "time", false, "View execution times")
 	pflag.Parse()
 
 	fmt.Println("WehScript Programming Language")
@@ -88,7 +93,13 @@ func main() {
 				continue
 			}
 
+			if viewExecutionTimes == true {
+				tmpTime = time.Now()
+			}
 			res, err := Run("<stdin>", text, globalSymbolTable)
+			if viewExecutionTimes == true {
+				tmpElapsed = time.Now().Sub(tmpTime)
+			}
 
 			if err != nil {
 				fmt.Println(err)
@@ -102,6 +113,9 @@ func main() {
 				}
 
 				// globalSymbolTable.SetSymbol("_", res) //TODO: update '_' variable after every expression (separate statementsnode?)
+			}
+			if viewExecutionTimes == true {
+				fmt.Println(tmpElapsed)
 			}
 		}
 	}
