@@ -40,21 +40,39 @@ func SetupGlobalSymbolTable() *environment.SymbolTable {
 }
 
 func Run(fileName string, text string, globalSymbolTable *environment.SymbolTable) (any, *errors.Error) {
+	if viewExecutionTimes == true {
+		tmpTime = time.Now()
+	}
 	_lexer := lexer.NewLexer(fileName, text)
 	tokens, err := _lexer.Tokenise()
+	if viewExecutionTimes == true {
+		lexerElapsed = time.Now().Sub(tmpTime)
+	}
 	if err != nil {
 		return nil, err
 	}
 
+	if viewExecutionTimes == true {
+		tmpTime = time.Now()
+	}
 	_parser := parser.NewParser(tokens)
 	ast := _parser.Parse()
+	if viewExecutionTimes == true {
+		parserElapsed = time.Now().Sub(tmpTime)
+	}
 	if ast.Err != nil {
 		return nil, ast.Err
 	}
 	// fmt.Println(ast.Node)
 
+	if viewExecutionTimes == true {
+		tmpTime = time.Now()
+	}
 	context := environment.Context{DisplayName: "<program>", SymTable: globalSymbolTable}
 	result := interpreter.Visit(ast.Node, context)
+	if viewExecutionTimes == true {
+		interpreterElapsed = time.Now().Sub(tmpTime)
+	}
 
 	return result.Value, result.Err
 }
@@ -63,7 +81,11 @@ var text string
 var bytecodeMode bool
 var viewExecutionTimes bool
 var tmpTime time.Time
-var tmpElapsed time.Duration
+var tmpStartTime time.Time
+var lexerElapsed time.Duration
+var parserElapsed time.Duration
+var interpreterElapsed time.Duration
+var elapsed time.Duration
 
 func main() {
 
@@ -94,11 +116,11 @@ func main() {
 			}
 
 			if viewExecutionTimes == true {
-				tmpTime = time.Now()
+				tmpStartTime = time.Now()
 			}
 			res, err := Run("<stdin>", text, globalSymbolTable)
 			if viewExecutionTimes == true {
-				tmpElapsed = time.Now().Sub(tmpTime)
+				elapsed = time.Now().Sub(tmpStartTime)
 			}
 
 			if err != nil {
@@ -115,7 +137,7 @@ func main() {
 				// globalSymbolTable.SetSymbol("_", res) //TODO: update '_' variable after every expression (separate statementsnode?)
 			}
 			if viewExecutionTimes == true {
-				fmt.Println(tmpElapsed)
+				fmt.Printf("\n====================\nlexer %v\nparser %v\ninterpreter %v\n--------------------\ntotal %v\n====================\n", lexerElapsed, parserElapsed, interpreterElapsed, elapsed)
 			}
 		}
 	}
