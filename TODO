@@ -2,12 +2,12 @@
   - STOPPED AT: https://www.youtube.com/watch?v=MzuzWupOFDg&list=PLZQftyCk7_SdoVexSmwy_tBgs7P0b97yD&index=14
 2) finish up good goods 
   - add file I/0
-  - add type casting
-  - move 'var' and 'del' logic right above call
-    - prevent var redeclaration (instead put a separate '=' rule alongside var assign in expr -> 
+  - move 'var' and 'del' logic right above call (?)
+    - if not at least prevent var redeclaration (instead put a separate '=' rule alongside var assign in expr -> 
       - make variable assign/update node
       - make item assign/update node
       - (or overhaul into single chain assign/update with the help of expr + call chain)
+  - add type casting
   - add OOP? https://craftinginterpreters.com/the-lox-language.html#classes
     - this means u need to add get and del for member access operator `.`
   - add import statements into "immutable objects" (?!? if u do this for compatibility u need to make stdlib IN `.weh` files!)
@@ -15,11 +15,12 @@
   - saner go CLI!
   - explain syntax/CLI in TODO or smth
 2) make bytecode compiler + reg-based VM (give option to choose between AST tree-walk interpreter and bytecode interpreter, especially when running .weh script)
+  - maybe (PLT-inspired) trap style stdlib?
 3) make language bundled thingy (which can be compiled to portable executable) or stick with bytecode files
 
 optional (if i rlly want typing??):
 - STATIC TYPING!!! 
-   - if u do this include type info as in https://pkg.go.dev/reflect#example-TypeOf ? (or simply `reflect.TypeOf(res).String()`) + prevent var type change in for loop)
-- add type inference?
+   - if u do this prevent var type change (including in for loop)
+- add type inference (via variable dec/functions symbol tracing/analysis or smth)?
 
 Note: fibonacci test func (adapted from https://youtu.be/14CPI1qBd7o?si=JJT5DiVi6dAb1uWc&t=58): `func fib(n);var a=0.0;var b=1.0;for i=0 to n then;var c=a+b;var a=b;var b=c;end;end`
