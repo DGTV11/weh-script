@@ -336,10 +336,13 @@ func VisitForNode(node nodes.ForNode, ctx environment.Context) *RuntimeResult {
 			return res.Failure(err)
 		}
 
-		elements = append(elements, res.Register(Visit(node.BodyNode, ctx)))
+		element := res.Register(Visit(node.BodyNode, ctx))
 		if res.Err != nil {
 			return res
 		}
+		if node.ShouldReturnNull == false {
+			elements = append(elements, element)
+		} //prevents unnecessary alloc
 
 		condRes, err = cond()
 		if err != nil {
@@ -368,10 +371,13 @@ func VisitWhileNode(node nodes.WhileNode, ctx environment.Context) *RuntimeResul
 		if !condition.IsTrue() {
 			break
 		}
-		elements = append(elements, res.Register(Visit(node.BodyNode, ctx)))
+		element := res.Register(Visit(node.BodyNode, ctx))
 		if res.Err != nil {
 			return res
 		}
+		if node.ShouldReturnNull == false {
+			elements = append(elements, element)
+		} //prevents unnecessary alloc
 	}
 
 	if node.ShouldReturnNull == true {
