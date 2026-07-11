@@ -3,6 +3,7 @@ package interpreter
 import (
 	"fmt"
 	"log"
+	"os"
 	"reflect"
 
 	"github.com/inancgumus/screen"
@@ -516,6 +517,10 @@ var BuiltInFunctionTable = map[string]BuiltInFunctionData{
 		FunctionRef: ExecuteExtend,
 		Args:        []string{"list_a", "list_b"},
 	},
+	"exit": {
+		FunctionRef: ExecuteExit,
+		Args:        []string{"code"},
+	},
 }
 
 func ExecutePrint(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
@@ -618,6 +623,21 @@ func ExecuteExtend(callable values.BaseFunctionInterface, execCtx environment.Co
 	return res.Success(&values.Null{})
 }
 
+func ExecuteExit(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	codeValue := execCtx.SymTable.GetSymbol("code").(values.BaseValueInterface)
+	code, ok := codeValue.(*values.Integer)
+	if ok == false {
+		posRange := codeValue.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "First argument must be Integer", execCtx))
+	}
+
+	os.Exit(int(code.Value))
+
+	return res.Success(&values.Null{}) // won't matter anyways
+}
+
 // *Function Calls
 func CheckArgs(callable values.BaseFunctionInterface, argNames []string, args []values.BaseValueInterface) *RuntimeResult {
 	res := NewRuntimeResult()
@@ -672,6 +692,9 @@ func ExecuteCallable(callableValue values.BaseValueInterface, args []values.Base
 		value := res.Register(Visit(c.BodyNode, execCtx))
 		if res.Err != nil {
 			return res
+		}
+		if c.ShouldReturnNull == true {
+			return res.Success(&values.Null{})
 		}
 		return res.Success(value)
 	case *values.BuiltInFunction:
