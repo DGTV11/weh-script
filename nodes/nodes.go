@@ -157,73 +157,91 @@ func (n UnaryOpNode) String() string {
 }
 
 type IfCase struct {
-	Cond Node
-	Expr Node
+	Cond             Node
+	Expr             Node
+	ShouldReturnNull bool
+}
+type ElseCase struct {
+	Expr             Node
+	ShouldReturnNull bool
 }
 type IfNode struct {
 	BaseNode
 	Cases    []IfCase
-	ElseCase Node
+	ElseCase *ElseCase
 }
 
-func NewIfNode(cases []IfCase, elseCase Node) IfNode {
-	var lastNode Node
+func NewIfNode(draftIfNode IfNode) IfNode { //this is what a statically typed lang does to people (or just skill issue idk man)
+	var lastExpr Node
+
+	cases := draftIfNode.Cases
+	elseCase := draftIfNode.ElseCase
 
 	if elseCase == nil {
 		// lastNode = cases[len(cases)-1].Cond
-		lastNode = cases[len(cases)-1].Expr
+		lastExpr = cases[len(cases)-1].Expr
 	} else {
-		lastNode = elseCase
+		lastExpr = elseCase.Expr
 	}
 
 	return IfNode{
 		Cases:    cases,
 		ElseCase: elseCase,
-		BaseNode: BaseNode{PosRange: position.PositionRange{Start: cases[0].Cond.GetPosRange().Start, End: lastNode.GetPosRange().End}},
+		BaseNode: BaseNode{PosRange: position.PositionRange{Start: cases[0].Cond.GetPosRange().Start, End: lastExpr.GetPosRange().End}},
 	}
 }
 func (c IfCase) String() string {
-	return fmt.Sprintf("(%v : %v)", c.Cond, c.Expr)
+	return fmt.Sprintf("(%v : %v ? %t)", c.Cond, c.Expr, c.ShouldReturnNull)
+}
+func (c ElseCase) String() string {
+	return fmt.Sprintf("(%v ? %t)", c.Expr, c.ShouldReturnNull)
 }
 func (n IfNode) String() string {
-	return fmt.Sprintf("(IF CASES %v ELSE %v)", n.Cases, n.ElseCase)
+	if n.ElseCase == nil {
+		return fmt.Sprintf("(IF CASES %v)", n.Cases)
+	}
+	return fmt.Sprintf("(IF CASES %v ELSE %v)", n.Cases, *n.ElseCase)
 }
 
 type ForNode struct {
 	BaseNode
-	VarNameTok     tokens.Token
-	StartValueNode Node
-	StopValueNode  Node
-	StepValueNode  Node
-	BodyNode       Node
+	VarNameTok       tokens.Token
+	StartValueNode   Node
+	StopValueNode    Node
+	StepValueNode    Node
+	BodyNode         Node
+	ShouldReturnNull bool
 }
 
-func NewForNode(varNameTok tokens.Token, startValueNode Node, stopValueNode Node, stepValueNode Node, bodyNode Node) ForNode {
+func NewForNode(varNameTok tokens.Token, startValueNode Node, stopValueNode Node, stepValueNode Node, bodyNode Node, shouldReturnNull bool) ForNode {
 	return ForNode{
-		VarNameTok:     varNameTok,
-		StartValueNode: startValueNode,
-		StopValueNode:  stopValueNode,
-		StepValueNode:  stepValueNode,
-		BodyNode:       bodyNode,
-		BaseNode:       BaseNode{PosRange: position.PositionRange{Start: varNameTok.PosRange.Start, End: bodyNode.GetPosRange().End}},
+		VarNameTok:       varNameTok,
+		StartValueNode:   startValueNode,
+		StopValueNode:    stopValueNode,
+		StepValueNode:    stepValueNode,
+		BodyNode:         bodyNode,
+		ShouldReturnNull: shouldReturnNull,
+		BaseNode:         BaseNode{PosRange: position.PositionRange{Start: varNameTok.PosRange.Start, End: bodyNode.GetPosRange().End}},
 	}
 }
 
 func (n ForNode) String() string {
-	return fmt.Sprintf("(FOR %v=%v TO %v STEP %v THEN %v)", n.VarNameTok, n.StartValueNode, n.StopValueNode, n.StepValueNode, n.BodyNode)
+	return fmt.Sprintf("(FOR %v=%v TO %v STEP %v THEN %v ? %t)", n.VarNameTok, n.StartValueNode, n.StopValueNode, n.StepValueNode, n.BodyNode, n.ShouldReturnNull)
 }
 
 type WhileNode struct {
 	BaseNode
-	CondNode Node
-	BodyNode Node
+	CondNode         Node
+	BodyNode         Node
+	ShouldReturnNull bool
 }
 
-func NewWhileNode(condNode Node, bodyNode Node) WhileNode {
+func NewWhileNode(condNode Node, bodyNode Node, shouldReturnNull bool) WhileNode {
 	return WhileNode{
-		CondNode: condNode,
-		BodyNode: bodyNode,
-		BaseNode: BaseNode{PosRange: position.PositionRange{Start: condNode.GetPosRange().Start, End: bodyNode.GetPosRange().End}},
+		CondNode:         condNode,
+		BodyNode:         bodyNode,
+		ShouldReturnNull: shouldReturnNull,
+		BaseNode:         BaseNode{PosRange: position.PositionRange{Start: condNode.GetPosRange().Start, End: bodyNode.GetPosRange().End}},
 	}
 }
 
@@ -233,12 +251,13 @@ func (n WhileNode) String() string {
 
 type FuncDefNode struct {
 	BaseNode
-	VarNameTok  *tokens.Token
-	ArgNameToks []tokens.Token
-	BodyNode    Node
+	VarNameTok       *tokens.Token
+	ArgNameToks      []tokens.Token
+	BodyNode         Node
+	ShouldReturnNull bool
 }
 
-func NewFuncDefNode(varNameTok *tokens.Token, argNameToks []tokens.Token, bodyNode Node) FuncDefNode {
+func NewFuncDefNode(varNameTok *tokens.Token, argNameToks []tokens.Token, bodyNode Node, shouldReturnNull bool) FuncDefNode {
 	var posStart *position.Position
 
 	if varNameTok != nil {
@@ -250,15 +269,16 @@ func NewFuncDefNode(varNameTok *tokens.Token, argNameToks []tokens.Token, bodyNo
 	}
 
 	return FuncDefNode{
-		VarNameTok:  varNameTok,
-		ArgNameToks: argNameToks,
-		BodyNode:    bodyNode,
-		BaseNode:    BaseNode{PosRange: position.PositionRange{Start: posStart, End: bodyNode.GetPosRange().End}},
+		VarNameTok:       varNameTok,
+		ArgNameToks:      argNameToks,
+		BodyNode:         bodyNode,
+		ShouldReturnNull: shouldReturnNull,
+		BaseNode:         BaseNode{PosRange: position.PositionRange{Start: posStart, End: bodyNode.GetPosRange().End}},
 	}
 }
 
 func (n FuncDefNode) String() string {
-	return fmt.Sprintf("(FUNC %v ARGS %v => %v)", n.VarNameTok, n.ArgNameToks, n.BodyNode)
+	return fmt.Sprintf("(FUNC %v ARGS %v => %v ? %t)", n.VarNameTok, n.ArgNameToks, n.BodyNode, n.ShouldReturnNull)
 }
 
 type CallNode struct {

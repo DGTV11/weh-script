@@ -6,7 +6,8 @@ import (
 	"log"
 	"maps"
 	"os"
-	"reflect"
+	// "reflect"
+	"strings"
 	"unsafe"
 
 	"github.com/spf13/pflag"
@@ -71,7 +72,7 @@ func main() {
 	} else {
 		globalSymbolTable := SetupGlobalSymbolTable()
 
-		for true {
+		for {
 			fmt.Print("wehscript > ")
 			// fmt.Scanf("%[^\n]", &text)
 
@@ -82,13 +83,25 @@ func main() {
 				fmt.Println(serr)
 			}
 
-			res, err := Run("<stdin>", scanner.Text(), globalSymbolTable)
+			text := scanner.Text()
+			if strings.TrimSpace(text) == "" {
+				continue
+			}
+
+			res, err := Run("<stdin>", text, globalSymbolTable)
 
 			if err != nil {
 				fmt.Println(err)
-			} else if reflect.TypeOf(res).String() != "*values.Null" {
-				fmt.Println(res)
-				globalSymbolTable.SetSymbol("_", res) //TODO: update '_' variable after every expression
+				// } else if reflect.TypeOf(res).String() != "*values.Null" {
+			} else if res != nil {
+				resV := res.(*values.List)
+				if len(resV.Elements) == 1 {
+					fmt.Println(resV.Elements[0])
+				} else {
+					fmt.Println(res)
+				}
+
+				// globalSymbolTable.SetSymbol("_", res) //TODO: update '_' variable after every expression (separate statementsnode?)
 			}
 		}
 	}

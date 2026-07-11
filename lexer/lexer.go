@@ -48,6 +48,12 @@ func (l *Lexer) Tokenise() ([]tokens.Token, *errors.Error) {
 			l.Advance()
 		case '\t':
 			l.Advance()
+		case '\n':
+			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeNewline, nil, &l.Position, nil))
+			l.Advance()
+		case ';':
+			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeNewline, nil, &l.Position, nil))
+			l.Advance()
 		case '"':
 			posStart := l.Position.Copy()
 			tokp := l.MakeString()

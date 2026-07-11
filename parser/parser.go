@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"slices"
 
 	"github.com/DGTV11/weh-script/errors"
@@ -9,16 +10,24 @@ import (
 )
 
 type ParseResult struct {
-	Node         nodes.Node
-	Err          *errors.Error
-	AdvanceCount int
+	Node                       nodes.Node
+	Err                        *errors.Error
+	LastRegisteredAdvanceCount int
+	AdvanceCount               int
+	ToReverseCount             int
 }
 
 func NewParseResult() *ParseResult {
-	return &ParseResult{Node: nil, Err: nil, AdvanceCount: 0}
+	return &ParseResult{}
+}
+
+func (pr *ParseResult) RegisterAdvance() {
+	pr.LastRegisteredAdvanceCount = 1
+	pr.AdvanceCount++
 }
 
 func (pr *ParseResult) Register(res *ParseResult) nodes.Node {
+	pr.LastRegisteredAdvanceCount = res.AdvanceCount
 	pr.AdvanceCount += res.AdvanceCount
 	if res.Err != nil {
 		pr.Err = res.Err
@@ -26,8 +35,12 @@ func (pr *ParseResult) Register(res *ParseResult) nodes.Node {
 	return res.Node
 }
 
-func (pr *ParseResult) RegisterAdvance() {
-	pr.AdvanceCount++
+func (pr *ParseResult) TryRegister(res *ParseResult) nodes.Node {
+	if res.Err != nil {
+		pr.ToReverseCount = res.AdvanceCount
+		return nil
+	}
+	return pr.Register(res)
 }
 
 func (pr *ParseResult) Success(node nodes.Node) *ParseResult {
@@ -58,25 +71,34 @@ func NewParser(tokenList []tokens.Token) *Parser {
 	return &newParser
 }
 
-func (p *Parser) Advance() *tokens.Token {
-	p.TokenIndex += 1
-
-	if p.TokenIndex < len(p.TokenList) {
+func (p *Parser) UpdateCurrentTok() {
+	if p.TokenIndex >= 0 && p.TokenIndex < len(p.TokenList) {
 		p.CurrentToken = &p.TokenList[p.TokenIndex]
 	}
+}
+
+func (p *Parser) Advance() *tokens.Token {
+	p.TokenIndex++
+	p.UpdateCurrentTok()
+	return p.CurrentToken
+}
+
+func (p *Parser) Reverse(amount int) *tokens.Token {
+	p.TokenIndex -= amount
+	p.UpdateCurrentTok()
 	return p.CurrentToken
 }
 
 //*Main Parser
 
 func (p *Parser) Parse() *ParseResult {
-	res := p.Expr()
+	res := p.Statements()
 
 	if res.Err == nil && p.CurrentToken.Type != tokens.TokenTypeEOF {
 		return res.Failure(
 			errors.NewInvalidSyntaxError(
 				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
-				"Expected '+', '-', '*', or '/'",
+				"Expected '+', '-', '*', '/', '**', '==', '!=', '<', '>', '<=', '>=', '&&' or '||'",
 			),
 		)
 	}
@@ -139,21 +161,22 @@ func (p *Parser) ListExpr() *ParseResult {
 	return res.Success(nodes.NewListNode(elementNodes, posStart, p.CurrentToken.PosRange.End.Copy()))
 }
 
-func (p *Parser) IfExpr() *ParseResult {
+func (p *Parser) IfExprCases(caseKeyword string) *ParseResult {
 	res := NewParseResult()
-	var cases []nodes.IfCase
-	var elseCase nodes.Node = nil
+	draftIfNode := nodes.IfNode{}
 
-	if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, "if") {
+	if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, caseKeyword) {
 		return res.Failure(
 			errors.NewInvalidSyntaxError(
 				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
-				"Expected 'if'",
+				fmt.Sprintf("Expected '%s'", caseKeyword),
 			),
 		)
 	}
+
 	res.RegisterAdvance()
 	p.Advance()
+
 	condition := res.Register(p.Expr())
 	if res.Err != nil {
 		return res
@@ -167,51 +190,192 @@ func (p *Parser) IfExpr() *ParseResult {
 			),
 		)
 	}
+
 	res.RegisterAdvance()
 	p.Advance()
-	expr := res.Register(p.Expr())
-	if res.Err != nil {
-		return res
-	}
 
-	cases = append(cases, nodes.IfCase{Cond: condition, Expr: expr})
-
-	for p.CurrentToken.Matches(tokens.TokenTypeKeyword, "elif") {
+	if p.CurrentToken.Type == tokens.TokenTypeNewline {
 		res.RegisterAdvance()
 		p.Advance()
-		condition := res.Register(p.Expr())
+
+		statements := res.Register(p.Statements())
 		if res.Err != nil {
 			return res
 		}
+		draftIfNode.Cases = append(draftIfNode.Cases, nodes.IfCase{Cond: condition, Expr: statements, ShouldReturnNull: true})
 
-		if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, "then") {
-			return res.Failure(
-				errors.NewInvalidSyntaxError(
-					p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
-					"Expected 'then'",
-				),
-			)
+		if p.CurrentToken.Matches(tokens.TokenTypeKeyword, "end") {
+			res.RegisterAdvance()
+			p.Advance()
+		} else {
+			newDraftIfNode := res.Register(p.IfExprBOrC())
+			if res.Err != nil {
+				return res
+			}
+			draftIfNode.Cases = append(draftIfNode.Cases, newDraftIfNode.(nodes.IfNode).Cases...)
+			draftIfNode.ElseCase = newDraftIfNode.(nodes.IfNode).ElseCase
 		}
-		res.RegisterAdvance()
-		p.Advance()
+	} else {
 		expr := res.Register(p.Expr())
 		if res.Err != nil {
 			return res
 		}
+		draftIfNode.Cases = append(draftIfNode.Cases, nodes.IfCase{Cond: condition, Expr: expr, ShouldReturnNull: false})
 
-		cases = append(cases, nodes.IfCase{Cond: condition, Expr: expr})
+		newDraftIfNode := res.Register(p.IfExprBOrC())
+		if res.Err != nil {
+			return res
+		}
+		draftIfNode.Cases = append(draftIfNode.Cases, newDraftIfNode.(nodes.IfNode).Cases...)
+		draftIfNode.ElseCase = newDraftIfNode.(nodes.IfNode).ElseCase
 	}
+	return res.Success(draftIfNode)
+}
+
+func (p *Parser) IfExpr() *ParseResult {
+	res := NewParseResult()
+	draftIfNode := res.Register(p.IfExprCases("if"))
+	if res.Err != nil {
+		return res
+	}
+
+	return res.Success(nodes.NewIfNode(draftIfNode.(nodes.IfNode)))
+}
+
+func (p *Parser) IfExprB() *ParseResult {
+	return p.IfExprCases("elif")
+}
+
+func (p *Parser) IfExprC() *ParseResult {
+	res := NewParseResult()
+	draftIfNode := nodes.IfNode{}
 
 	if p.CurrentToken.Matches(tokens.TokenTypeKeyword, "else") {
 		res.RegisterAdvance()
 		p.Advance()
-		elseCase = res.Register(p.Expr())
-		if res.Err != nil {
-			return res
+
+		if p.CurrentToken.Type == tokens.TokenTypeNewline {
+			res.RegisterAdvance()
+			p.Advance()
+
+			statements := res.Register(p.Statements())
+			if res.Err != nil {
+				return res
+			}
+			draftIfNode.ElseCase = &nodes.ElseCase{Expr: statements, ShouldReturnNull: true}
+
+			if p.CurrentToken.Matches(tokens.TokenTypeKeyword, "end") {
+				res.RegisterAdvance()
+				p.Advance()
+			} else {
+				return res.Failure(
+					errors.NewInvalidSyntaxError(
+						p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+						"Expected 'end'",
+					),
+				)
+			}
+		} else {
+			expr := res.Register(p.Expr())
+			if res.Err != nil {
+				return res
+			}
+			draftIfNode.ElseCase = &nodes.ElseCase{Expr: expr, ShouldReturnNull: false}
 		}
 	}
-	return res.Success(nodes.NewIfNode(cases, elseCase))
+
+	return res.Success(draftIfNode)
 }
+
+func (p *Parser) IfExprBOrC() *ParseResult {
+	res := NewParseResult()
+	draftIfNode := nodes.IfNode{}
+
+	if p.CurrentToken.Matches(tokens.TokenTypeKeyword, "elif") {
+		draftIfNode = res.Register(p.IfExprB()).(nodes.IfNode)
+	} else {
+		draftIfNode = res.Register(p.IfExprC()).(nodes.IfNode)
+	}
+	if res.Err != nil {
+		return res
+	}
+
+	return res.Success(draftIfNode)
+}
+
+// func (p *Parser) IfExpr() *ParseResult {
+// 	res := NewParseResult()
+// 	var cases []nodes.IfCase
+// 	var elseCase nodes.Node = nil
+//
+// 	if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, "if") {
+// 		return res.Failure(
+// 			errors.NewInvalidSyntaxError(
+// 				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+// 				"Expected 'if'",
+// 			),
+// 		)
+// 	}
+// 	res.RegisterAdvance()
+// 	p.Advance()
+// 	condition := res.Register(p.Expr())
+// 	if res.Err != nil {
+// 		return res
+// 	}
+//
+// 	if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, "then") {
+// 		return res.Failure(
+// 			errors.NewInvalidSyntaxError(
+// 				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+// 				"Expected 'then'",
+// 			),
+// 		)
+// 	}
+// 	res.RegisterAdvance()
+// 	p.Advance()
+// 	expr := res.Register(p.Expr())
+// 	if res.Err != nil {
+// 		return res
+// 	}
+//
+// 	cases = append(cases, nodes.IfCase{Cond: condition, Expr: expr})
+//
+// 	for p.CurrentToken.Matches(tokens.TokenTypeKeyword, "elif") {
+// 		res.RegisterAdvance()
+// 		p.Advance()
+// 		condition := res.Register(p.Expr())
+// 		if res.Err != nil {
+// 			return res
+// 		}
+//
+// 		if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, "then") {
+// 			return res.Failure(
+// 				errors.NewInvalidSyntaxError(
+// 					p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+// 					"Expected 'then'",
+// 				),
+// 			)
+// 		}
+// 		res.RegisterAdvance()
+// 		p.Advance()
+// 		expr := res.Register(p.Expr())
+// 		if res.Err != nil {
+// 			return res
+// 		}
+//
+// 		cases = append(cases, nodes.IfCase{Cond: condition, Expr: expr})
+// 	}
+//
+// 	if p.CurrentToken.Matches(tokens.TokenTypeKeyword, "else") {
+// 		res.RegisterAdvance()
+// 		p.Advance()
+// 		elseCase = res.Register(p.Expr())
+// 		if res.Err != nil {
+// 			return res
+// 		}
+// 	}
+// 	return res.Success(nodes.NewIfNode(cases, elseCase))
+// }
 
 func (p *Parser) ForExpr() *ParseResult {
 	res := NewParseResult()
@@ -293,12 +457,98 @@ func (p *Parser) ForExpr() *ParseResult {
 	res.RegisterAdvance()
 	p.Advance()
 
+	if p.CurrentToken.Type == tokens.TokenTypeNewline {
+		res.RegisterAdvance()
+		p.Advance()
+
+		body := res.Register(p.Statements())
+		if res.Err != nil {
+			return res
+		}
+
+		if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, "end") {
+			return res.Failure(
+				errors.NewInvalidSyntaxError(
+					p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+					"Expected 'end'",
+				),
+			)
+		}
+
+		res.RegisterAdvance()
+		p.Advance()
+
+		return res.Success(nodes.NewForNode(varName, startValue, stopValue, stepValue, body, true))
+	}
+
 	body := res.Register(p.Expr())
 	if res.Err != nil {
 		return res
 	}
 
-	return res.Success(nodes.NewForNode(varName, startValue, stopValue, stepValue, body))
+	return res.Success(nodes.NewForNode(varName, startValue, stopValue, stepValue, body, false))
+}
+
+func (p *Parser) WhileExpr() *ParseResult {
+	res := NewParseResult()
+
+	if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, "while") {
+		return res.Failure(
+			errors.NewInvalidSyntaxError(
+				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+				"Expected 'while'",
+			),
+		)
+	}
+	res.RegisterAdvance()
+	p.Advance()
+
+	condition := res.Register(p.Expr())
+	if res.Err != nil {
+		return res
+	}
+
+	if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, "then") {
+		return res.Failure(
+			errors.NewInvalidSyntaxError(
+				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+				"Expected 'then'",
+			),
+		)
+	}
+	res.RegisterAdvance()
+	p.Advance()
+
+	if p.CurrentToken.Type == tokens.TokenTypeNewline {
+		res.RegisterAdvance()
+		p.Advance()
+
+		body := res.Register(p.Statements())
+		if res.Err != nil {
+			return res
+		}
+
+		if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, "end") {
+			return res.Failure(
+				errors.NewInvalidSyntaxError(
+					p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+					"Expected 'end'",
+				),
+			)
+		}
+
+		res.RegisterAdvance()
+		p.Advance()
+
+		return res.Success(nodes.NewWhileNode(condition, body, true))
+	}
+
+	body := res.Register(p.Expr())
+	if res.Err != nil {
+		return res
+	}
+
+	return res.Success(nodes.NewWhileNode(condition, body, false))
 }
 
 func (p *Parser) FuncDef() *ParseResult {
@@ -389,11 +639,25 @@ func (p *Parser) FuncDef() *ParseResult {
 	res.RegisterAdvance()
 	p.Advance()
 
-	if p.CurrentToken.Type != tokens.TokenTypeArrow {
+	if p.CurrentToken.Type == tokens.TokenTypeArrow {
+		res.RegisterAdvance()
+		p.Advance()
+
+		body := res.Register(p.Expr())
+		if res.Err != nil {
+			return res
+		}
+
+		return res.Success(
+			nodes.NewFuncDefNode(varNameTok, argNameToks, body, false),
+		)
+	}
+
+	if p.CurrentToken.Type != tokens.TokenTypeNewline {
 		return res.Failure(
 			errors.NewInvalidSyntaxError(
 				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
-				"Expected '=>'",
+				"Expected '=>' or Newline",
 			),
 		)
 	}
@@ -401,52 +665,26 @@ func (p *Parser) FuncDef() *ParseResult {
 	res.RegisterAdvance()
 	p.Advance()
 
-	body := res.Register(p.Expr())
+	body := res.Register(p.Statements())
 	if res.Err != nil {
 		return res
 	}
+
+	if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, "end") {
+		return res.Failure(
+			errors.NewInvalidSyntaxError(
+				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+				"Expected 'end'",
+			),
+		)
+	}
+
+	res.RegisterAdvance()
+	p.Advance()
 
 	return res.Success(
-		nodes.NewFuncDefNode(varNameTok, argNameToks, body),
+		nodes.NewFuncDefNode(varNameTok, argNameToks, body, true),
 	)
-}
-
-func (p *Parser) WhileExpr() *ParseResult {
-	res := NewParseResult()
-
-	if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, "while") {
-		return res.Failure(
-			errors.NewInvalidSyntaxError(
-				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
-				"Expected 'while'",
-			),
-		)
-	}
-	res.RegisterAdvance()
-	p.Advance()
-
-	condition := res.Register(p.Expr())
-	if res.Err != nil {
-		return res
-	}
-
-	if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, "then") {
-		return res.Failure(
-			errors.NewInvalidSyntaxError(
-				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
-				"Expected 'then'",
-			),
-		)
-	}
-	res.RegisterAdvance()
-	p.Advance()
-
-	body := res.Register(p.Expr())
-	if res.Err != nil {
-		return res
-	}
-
-	return res.Success(nodes.NewWhileNode(condition, body))
 }
 
 func (p *Parser) Atom() *ParseResult {
@@ -770,6 +1008,51 @@ func (p *Parser) Expr() *ParseResult {
 		)
 	}
 	return res.Success(node)
+}
+
+func (p *Parser) Statements() *ParseResult {
+	res := NewParseResult()
+	var statements []nodes.Node
+
+	posStart := p.CurrentToken.PosRange.Start.Copy()
+
+	for p.CurrentToken.Type == tokens.TokenTypeNewline {
+		res.RegisterAdvance()
+		p.Advance()
+	}
+
+	statement := res.Register(p.Expr())
+	if res.Err != nil {
+		return res
+	}
+	statements = append(statements, statement)
+
+	moreStatements := true
+
+	for {
+		newlineCount := 0
+		for p.CurrentToken.Type == tokens.TokenTypeNewline {
+			res.RegisterAdvance()
+			p.Advance()
+			newlineCount += 1
+		}
+		if newlineCount == 0 {
+			moreStatements = false
+		}
+
+		if moreStatements == false {
+			break
+		}
+		statement := res.TryRegister(p.Expr())
+		if statement == nil {
+			p.Reverse(res.ToReverseCount)
+			moreStatements = false
+			continue
+		}
+		statements = append(statements, statement)
+	}
+
+	return res.Success(nodes.NewListNode(statements, posStart, p.CurrentToken.PosRange.End.Copy()))
 }
 
 //*BinOp helpers

@@ -38,6 +38,7 @@ const (
 	TokenTypeBNot
 	TokenTypeComma
 	TokenTypeArrow
+	TokenTypeNewline
 	TokenTypeEOF
 )
 
@@ -71,6 +72,7 @@ var TokenTypeNameMap = [...]string{
 	TokenTypeBNot:       "TokenTypeBNot",
 	TokenTypeComma:      "TokenTypeComma",
 	TokenTypeArrow:      "TokenTypeArrow",
+	TokenTypeNewline:    "TokenTypeNewline",
 	TokenTypeEOF:        "TokenTypeEOF",
 }
 
@@ -86,6 +88,7 @@ var Keywords = []string{
 	"step",
 	"while",
 	"func",
+	"end",
 }
 
 type Token struct {

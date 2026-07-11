@@ -21,7 +21,7 @@ type RuntimeResult struct {
 }
 
 func NewRuntimeResult() *RuntimeResult {
-	return &RuntimeResult{Value: nil, Err: nil}
+	return &RuntimeResult{}
 }
 
 func (rr *RuntimeResult) Register(res *RuntimeResult) values.BaseValueInterface {
@@ -266,17 +266,24 @@ func VisitIfNode(node nodes.IfNode, ctx environment.Context) *RuntimeResult {
 			if res.Err != nil {
 				return res
 			}
+			if node.Cases[i].ShouldReturnNull == true {
+				goto returnNull
+			}
 			return res.Success(exprValue)
 		}
 	}
 	if node.ElseCase != nil {
-		elseValue := res.Register(Visit(node.ElseCase, ctx))
+		elseValue := res.Register(Visit(node.ElseCase.Expr, ctx))
 		if res.Err != nil {
 			return res
+		}
+		if node.ElseCase.ShouldReturnNull == true {
+			goto returnNull
 		}
 		return res.Success(elseValue)
 	}
 
+returnNull:
 	return res.Success(&values.Null{})
 }
 
@@ -339,6 +346,9 @@ func VisitForNode(node nodes.ForNode, ctx environment.Context) *RuntimeResult {
 		}
 	}
 
+	if node.ShouldReturnNull == true {
+		return res.Success(&values.Null{})
+	}
 	result := &values.List{Elements: elements}
 	result.SetContext(ctx)
 	result.SetValuePos(node.GetPosRange())
@@ -363,6 +373,9 @@ func VisitWhileNode(node nodes.WhileNode, ctx environment.Context) *RuntimeResul
 		}
 	}
 
+	if node.ShouldReturnNull == true {
+		return res.Success(&values.Null{})
+	}
 	result := &values.List{Elements: elements}
 	result.SetContext(ctx)
 	result.SetValuePos(node.GetPosRange())
@@ -384,7 +397,7 @@ func VisitFuncDefNode(node nodes.FuncDefNode, ctx environment.Context) *RuntimeR
 		argNames = append(argNames, node.ArgNameToks[i].Value.(string))
 	}
 	// funcValue := values.NewFunction(funcName, bodyNode, argNames)
-	funcValue := &values.Function{BodyNode: bodyNode, ArgNames: argNames, BaseFunction: values.BaseFunction{Name: funcName}}
+	funcValue := &values.Function{BodyNode: bodyNode, ArgNames: argNames, ShouldReturnNull: node.ShouldReturnNull, BaseFunction: values.BaseFunction{Name: funcName}}
 	funcValue.SetContext(ctx)
 	funcValue.SetValuePos(node.GetPosRange())
 
