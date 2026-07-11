@@ -1,4 +1,4 @@
-# weh-script
+# WehScript Programming Language
 
 Stupid programming language in Go
 - May be template for future programming languages I design

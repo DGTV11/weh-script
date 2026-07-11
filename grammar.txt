@@ -1,3 +1,5 @@
+statements  : Newline* expr (Newline+ expr)* Newline*
+
 expr        : Keyword:var Identifier Equals expr
             : Keyword:del Identifier (Lsquare expr Rsquare)*
             : comp-expr ((LAnd|LOr) comp-expr)*
@@ -29,15 +31,29 @@ atom        : Int|Float|String|Identifier
 
 list-expr   : Lsquare (expr (Comma expr)*)? Rsquare
 
-if-expr     : Keyword:if expr Keyword:then expr
-              (Keyword:elif expr Keyword:then expr)*
-              (Keyword:else expr)?
+if-expr     : Keyword:if expr Keyword:then
+              (expr if-expr-b|if-expr-c?)
+            | (Newline statements Keyword:end|if-expr-b|if-expr-c)
+
+if-expr-b   : Keyword:elif expr Keyword:then
+              (expr if-expr-b|if-expr-c?)
+            | (Newline statements Keyword:end|if-expr-b|if-expr-c)
+
+if-expr-c   : Keyword:else
+              expr
+            | (Newline statements Keyword:end)
 
 for-expr    : Keyword:for Identifier Equals expr Keyword:to expr
-              (Keyword:step expr)? Keyword:then expr
+              (Keyword:step expr)? Keyword:then 
+              expr
+            | (Newline statements Keyword:end)
 
-while-expr  : Keyword:while expr Keyword:then expr
+while-expr  : Keyword:while expr Keyword:then
+              expr
+            | (Newline statements Keyword:end)
 
 func-def    : Keyword:func Identifier?
               Lparen (Identifier (Comma Identifier)*)? Rparen
-              Arrow expr
+              (Arrow expr)
+            | (Newline statements Keyword:end)
+
