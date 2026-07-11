@@ -137,7 +137,7 @@ func main() {
 				// globalSymbolTable.SetSymbol("_", res) //TODO: update '_' variable after every expression (separate statementsnode?)
 			}
 			if viewExecutionTimes == true {
-				fmt.Printf("\n====================\nlexer %v\nparser %v\ninterpreter %v\n--------------------\ntotal %v\n====================\n", lexerElapsed, parserElapsed, interpreterElapsed, elapsed)
+				fmt.Printf("\n===========================\nlexer %v\nparser %v\ninterpreter %v\n---------------------------\ntotal %v\n===========================\n", lexerElapsed, parserElapsed, interpreterElapsed, elapsed)
 			}
 		}
 	}
