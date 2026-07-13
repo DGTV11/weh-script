@@ -982,9 +982,9 @@ func (p *Parser) Statements() *ParseResult {
 		statements = append(statements, statement)
 	}
 
-	return res.Success(nodes.ListNode{
-		ElementNodes: statements,
-		BaseNode:     nodes.BaseNode{position.PositionRange{Start: posStart, End: p.CurrentToken.PosRange.End.Copy()}},
+	return res.Success(nodes.StatementsNode{
+		StatementNodes: statements,
+		BaseNode:       nodes.BaseNode{position.PositionRange{Start: posStart, End: p.CurrentToken.PosRange.End.Copy()}},
 	})
 }
 

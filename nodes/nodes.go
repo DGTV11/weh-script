@@ -62,6 +62,15 @@ func (n ListNode) String() string {
 	return fmt.Sprintf("%v", n.ElementNodes)
 }
 
+type StatementsNode struct {
+	BaseNode
+	StatementNodes []Node
+}
+
+func (n StatementsNode) String() string {
+	return fmt.Sprintf("(STATEMENTS %v)", n.StatementNodes)
+}
+
 type VariableAccessNode struct {
 	BaseNode
 	VarNameTok tokens.Token

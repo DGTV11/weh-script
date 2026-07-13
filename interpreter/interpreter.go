@@ -87,6 +87,8 @@ func Visit(node nodes.Node, ctx environment.Context) *RuntimeResult {
 		return VisitStringNode(node.(nodes.StringNode), ctx)
 	case nodes.ListNode:
 		return VisitListNode(node.(nodes.ListNode), ctx)
+	case nodes.StatementsNode:
+		return VisitStatementsNode(node.(nodes.StatementsNode), ctx)
 	case nodes.VariableAccessNode:
 		return VisitVariableAccessNode(node.(nodes.VariableAccessNode), ctx)
 	case nodes.VariableAssignNode:
@@ -165,6 +167,23 @@ func VisitListNode(node nodes.ListNode, ctx environment.Context) *RuntimeResult 
 	list.SetContext(ctx)
 	list.SetValuePos(node.GetPosRange())
 	return res.Success(list)
+}
+
+func VisitStatementsNode(node nodes.StatementsNode, ctx environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+	var lastStatementValue values.BaseValueInterface = &values.Null{}
+
+	for i := 0; i < len(node.StatementNodes); i++ {
+		value := res.Register(Visit(node.StatementNodes[i], ctx))
+		if res.ShouldReturn() {
+			return res
+		}
+		if reflect.TypeOf(value).String() != "*values.Null" {
+			lastStatementValue = value
+		}
+	}
+
+	return res.Success(lastStatementValue)
 }
 
 func VisitVariableAccessNode(node nodes.VariableAccessNode, ctx environment.Context) *RuntimeResult {
