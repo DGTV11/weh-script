@@ -48,6 +48,15 @@ func (l *Lexer) Tokenise() ([]tokens.Token, *errors.Error) {
 			l.Advance()
 		case '\t':
 			l.Advance()
+		case '#':
+			l.Advance()
+			for l.CurrentChar != nil && *l.CurrentChar != '\n' && *l.CurrentChar != ';' {
+				// for l.CurrentChar != nil && *l.CurrentChar != '\n' {
+				l.Advance()
+			}
+			if l.CurrentChar != nil {
+				l.Advance()
+			}
 		case '\n':
 			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeNewline, nil, &l.Position, nil))
 			l.Advance()

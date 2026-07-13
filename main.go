@@ -6,9 +6,11 @@ import (
 	"log"
 	"maps"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 	"unsafe"
+
 	// "reflect"
 
 	"github.com/spf13/pflag"
@@ -41,6 +43,7 @@ func SetupGlobalSymbolTable() *environment.SymbolTable {
 
 func Run(fileName string, text string, globalSymbolTable *environment.SymbolTable) (any, *errors.Error) {
 	if viewExecutionTimes == true {
+		tmpStartTime = time.Now()
 		tmpTime = time.Now()
 	}
 	_lexer := lexer.NewLexer(fileName, text)
@@ -72,6 +75,7 @@ func Run(fileName string, text string, globalSymbolTable *environment.SymbolTabl
 	result := interpreter.Visit(ast.Node, context)
 	if viewExecutionTimes == true {
 		interpreterElapsed = time.Now().Sub(tmpTime)
+		elapsed = time.Now().Sub(tmpStartTime)
 	}
 
 	return result.Value, result.Err
@@ -87,12 +91,7 @@ var parserElapsed time.Duration
 var interpreterElapsed time.Duration
 var elapsed time.Duration
 
-func main() {
-
-	pflag.BoolVar(&bytecodeMode, "bytecode-mode", false, "Enable bytecode mode") //after implementing bytecode VM: default this to true and make non-bytecode mode legacy
-	pflag.BoolVar(&viewExecutionTimes, "time", false, "View execution times")
-	pflag.Parse()
-
+func shell() {
 	fmt.Println("WehScript Programming Language")
 	if bytecodeMode == true {
 		log.Fatal("Bytecode VM not implemented")
@@ -115,13 +114,7 @@ func main() {
 				continue
 			}
 
-			if viewExecutionTimes == true {
-				tmpStartTime = time.Now()
-			}
 			res, err := Run("<stdin>", text, globalSymbolTable)
-			if viewExecutionTimes == true {
-				elapsed = time.Now().Sub(tmpStartTime)
-			}
 
 			if err != nil {
 				fmt.Println(err)
@@ -140,5 +133,41 @@ func main() {
 				fmt.Printf("\n===========================\nlexer %v\nparser %v\ninterpreter %v\n---------------------------\ntotal %v\n===========================\n", lexerElapsed, parserElapsed, interpreterElapsed, elapsed)
 			}
 		}
+	}
+}
+
+func runFile(fp string) {
+	if fileExt := filepath.Ext(fp); fileExt != ".weh" {
+		log.Fatal("Invalid file extension") //TODO: .wvm bytecode files
+	}
+
+	programBytestr, Rerr := os.ReadFile(fp)
+	if Rerr != nil {
+		log.Fatal(Rerr)
+	}
+
+	program := string(programBytestr)
+	globalSymbolTable := SetupGlobalSymbolTable()
+	_, err := Run(fp, program, globalSymbolTable)
+
+	if err != nil {
+		fmt.Println(err)
+		// } else if reflect.TypeOf(res).String() != "*values.Null" {
+	}
+	if viewExecutionTimes == true {
+		fmt.Printf("\n===========================\nlexer %v\nparser %v\ninterpreter %v\n---------------------------\ntotal %v\n===========================\n", lexerElapsed, parserElapsed, interpreterElapsed, elapsed)
+	}
+
+}
+
+func main() {
+	pflag.BoolVar(&bytecodeMode, "bytecode-mode", false, "Enable bytecode mode") //after implementing bytecode VM: default this to true and make non-bytecode mode legacy
+	pflag.BoolVar(&viewExecutionTimes, "time", false, "View execution times")
+	pflag.Parse()
+
+	if fp := pflag.Arg(0); fp == "" {
+		shell()
+	} else {
+		runFile(fp)
 	}
 }
