@@ -13,10 +13,18 @@ func StringWithArrows(text string, positionStart *position.Position, positionEnd
 	result := ""
 
 	// calculate indices
-	indexStart := max(strings.LastIndexByte(text[:positionStart.Index], '\n'), 0)
-	indexEnd := strings.IndexByte(text[:indexStart], '\n')
+	indexStart := strings.LastIndexByte(text[:positionStart.Index], '\n')
+	if indexStart < 0 {
+		indexStart = 0
+	} else {
+		indexStart++
+	}
+
+	indexEnd := strings.IndexByte(text[indexStart:], '\n')
 	if indexEnd < 0 {
 		indexEnd = len(text)
+	} else {
+		indexEnd += indexStart
 	}
 
 	// generate each line
@@ -42,10 +50,16 @@ func StringWithArrows(text string, positionStart *position.Position, positionEnd
 		result += strings.Repeat(" ", columnStart) + strings.Repeat("^", (columnEnd-columnStart))
 
 		// recalculate indices
-		indexStart = indexEnd
-		indexEnd = strings.IndexByte(text[:indexStart], '\n')
+		indexStart = indexEnd + 1
+		if indexStart >= len(text) {
+			break
+		}
+
+		indexEnd = strings.IndexByte(text[indexStart:], '\n')
 		if indexEnd < 0 {
 			indexEnd = len(text)
+		} else {
+			indexEnd += indexStart
 		}
 	}
 
