@@ -58,12 +58,6 @@ type ListNode struct {
 	ElementNodes []Node
 }
 
-func NewListNode(elementNodes []Node, posStart *position.Position, posEnd *position.Position) ListNode {
-	return ListNode{
-		ElementNodes: elementNodes,
-		BaseNode:     BaseNode{position.PositionRange{Start: posStart, End: posEnd}},
-	}
-}
 func (n ListNode) String() string {
 	return fmt.Sprintf("%v", n.ElementNodes)
 }
@@ -212,10 +206,10 @@ type FuncDefNode struct {
 	VarNameTok       *tokens.Token
 	ArgNameToks      []tokens.Token
 	BodyNode         Node
-	ShouldReturnNull bool
+	ShouldAutoReturn bool
 }
 
-func NewFuncDefNode(varNameTok *tokens.Token, argNameToks []tokens.Token, bodyNode Node, shouldReturnNull bool) FuncDefNode {
+func NewFuncDefNode(varNameTok *tokens.Token, argNameToks []tokens.Token, bodyNode Node, shouldAutoReturn bool) FuncDefNode {
 	var posStart *position.Position
 
 	if varNameTok != nil {
@@ -230,13 +224,13 @@ func NewFuncDefNode(varNameTok *tokens.Token, argNameToks []tokens.Token, bodyNo
 		VarNameTok:       varNameTok,
 		ArgNameToks:      argNameToks,
 		BodyNode:         bodyNode,
-		ShouldReturnNull: shouldReturnNull,
+		ShouldAutoReturn: shouldAutoReturn,
 		BaseNode:         BaseNode{PosRange: position.PositionRange{Start: posStart, End: bodyNode.GetPosRange().End}},
 	}
 }
 
 func (n FuncDefNode) String() string {
-	return fmt.Sprintf("(FUNC %v ARGS %v => %v ? %t)", n.VarNameTok, n.ArgNameToks, n.BodyNode, n.ShouldReturnNull)
+	return fmt.Sprintf("(FUNC %v ARGS %v => %v ? %t)", n.VarNameTok, n.ArgNameToks, n.BodyNode, n.ShouldAutoReturn)
 }
 
 type CallNode struct {
@@ -263,6 +257,34 @@ func NewCallNode(nodeToCall Node, argNodes []Node) CallNode {
 
 func (n CallNode) String() string {
 	return fmt.Sprintf("(CALL %v ARGS %v)", n.NodeToCall, n.ArgNodes)
+}
+
+type ReturnNode struct {
+	BaseNode
+	NodeToReturn Node
+}
+
+func (n ReturnNode) String() string {
+	if n.NodeToReturn == nil {
+		return "(RETURN)"
+	}
+	return fmt.Sprintf("(RETURN %v)", n.NodeToReturn)
+}
+
+type ContinueNode struct {
+	BaseNode
+}
+
+func (n ContinueNode) String() string {
+	return "(CONTINUE)"
+}
+
+type BreakNode struct {
+	BaseNode
+}
+
+func (n BreakNode) String() string {
+	return "(BREAK)"
 }
 
 func NewVariableAccessNode(varNameTok tokens.Token) VariableAccessNode {

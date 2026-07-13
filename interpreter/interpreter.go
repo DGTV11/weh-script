@@ -17,29 +17,65 @@ import (
 
 // *RuntimeResult
 type RuntimeResult struct {
-	Value values.BaseValueInterface
-	Err   *errors.Error
+	Value              values.BaseValueInterface
+	Err                *errors.Error
+	FuncReturnValue    values.BaseValueInterface
+	LoopShouldContinue bool
+	LoopShouldBreak    bool
 }
 
 func NewRuntimeResult() *RuntimeResult {
 	return &RuntimeResult{}
 }
 
+func (rr *RuntimeResult) Reset() {
+	rr.Value = nil
+	rr.Err = nil
+	rr.FuncReturnValue = nil
+	rr.LoopShouldContinue = false
+	rr.LoopShouldBreak = false
+}
+
 func (rr *RuntimeResult) Register(res *RuntimeResult) values.BaseValueInterface {
-	if res.Err != nil {
-		rr.Err = res.Err
-	}
+	rr.Err = res.Err
+	rr.FuncReturnValue = res.FuncReturnValue
+	rr.LoopShouldContinue = res.LoopShouldContinue
+	rr.LoopShouldBreak = res.LoopShouldBreak
 	return res.Value
 }
 
 func (rr *RuntimeResult) Success(value values.BaseValueInterface) *RuntimeResult {
+	rr.Reset()
 	rr.Value = value
 	return rr
 }
 
+func (rr *RuntimeResult) SuccessReturn(value values.BaseValueInterface) *RuntimeResult {
+	rr.Reset()
+	rr.FuncReturnValue = value
+	return rr
+}
+
+func (rr *RuntimeResult) SuccessContinue() *RuntimeResult {
+	rr.Reset()
+	rr.LoopShouldContinue = true
+	return rr
+}
+
+func (rr *RuntimeResult) SuccessBreak() *RuntimeResult {
+	rr.Reset()
+	rr.LoopShouldBreak = true
+	return rr
+}
+
 func (rr *RuntimeResult) Failure(err *errors.Error) *RuntimeResult {
+	rr.Reset()
 	rr.Err = err
 	return rr
+}
+
+func (rr *RuntimeResult) ShouldReturn() bool {
+	return rr.Err != nil || rr.FuncReturnValue != nil || rr.LoopShouldContinue || rr.LoopShouldBreak
 }
 
 // *Main Interpreter
@@ -75,6 +111,12 @@ func Visit(node nodes.Node, ctx environment.Context) *RuntimeResult {
 		return VisitItemAccessNode(node.(nodes.ItemAccessNode), ctx)
 	case nodes.ItemDeleteNode:
 		return VisitItemDeleteNode(node.(nodes.ItemDeleteNode), ctx)
+	case nodes.ReturnNode:
+		return VisitReturnNode(node.(nodes.ReturnNode), ctx)
+	case nodes.ContinueNode:
+		return VisitContinueNode(node.(nodes.ContinueNode), ctx)
+	case nodes.BreakNode:
+		return VisitBreakNode(node.(nodes.BreakNode), ctx)
 	default:
 		posRange := node.GetPosRange()
 		return NewRuntimeResult().Failure(errors.NewNotImplementedError(posRange.Start, posRange.End, fmt.Sprintf("No Visit function defined for node type %T", n), ctx))
@@ -114,7 +156,7 @@ func VisitListNode(node nodes.ListNode, ctx environment.Context) *RuntimeResult 
 
 	for i := 0; i < len(node.ElementNodes); i++ {
 		elements = append(elements, res.Register(Visit(node.ElementNodes[i], ctx)))
-		if res.Err != nil {
+		if res.ShouldReturn() {
 			return res
 		}
 	}
@@ -148,7 +190,7 @@ func VisitVariableAssignNode(node nodes.VariableAssignNode, ctx environment.Cont
 	res := NewRuntimeResult()
 	varName := node.VarNameTok.Value.(string)
 	value := res.Register(Visit(node.ValueNode, ctx))
-	if res.Err != nil {
+	if res.ShouldReturn() {
 		return res
 	}
 
@@ -180,11 +222,11 @@ func VisitBinOpNode(node nodes.BinOpNode, ctx environment.Context) *RuntimeResul
 	res := NewRuntimeResult()
 
 	left := res.Register(Visit(node.LeftNode, ctx))
-	if res.Err != nil {
+	if res.ShouldReturn() {
 		return res
 	}
 	right := res.Register(Visit(node.RightNode, ctx))
-	if res.Err != nil {
+	if res.ShouldReturn() {
 		return res
 	}
 
@@ -232,7 +274,7 @@ func VisitUnaryOpNode(node nodes.UnaryOpNode, ctx environment.Context) *RuntimeR
 	res := NewRuntimeResult()
 
 	number := res.Register(Visit(node.NodeValue, ctx))
-	if res.Err != nil {
+	if res.ShouldReturn() {
 		return res
 	}
 
@@ -258,13 +300,13 @@ func VisitIfNode(node nodes.IfNode, ctx environment.Context) *RuntimeResult {
 
 	for i := 0; i < len(node.Cases); i++ {
 		conditionValue := res.Register(Visit(node.Cases[i].Cond, ctx))
-		if res.Err != nil {
+		if res.ShouldReturn() {
 			return res
 		}
 
 		if conditionValue.IsTrue() {
 			exprValue := res.Register(Visit(node.Cases[i].Expr, ctx))
-			if res.Err != nil {
+			if res.ShouldReturn() {
 				return res
 			}
 			if node.Cases[i].ShouldReturnNull == true {
@@ -275,7 +317,7 @@ func VisitIfNode(node nodes.IfNode, ctx environment.Context) *RuntimeResult {
 	}
 	if node.ElseCase != nil {
 		elseValue := res.Register(Visit(node.ElseCase.Expr, ctx))
-		if res.Err != nil {
+		if res.ShouldReturn() {
 			return res
 		}
 		if node.ElseCase.ShouldReturnNull == true {
@@ -293,19 +335,19 @@ func VisitForNode(node nodes.ForNode, ctx environment.Context) *RuntimeResult {
 	var elements []values.BaseValueInterface
 
 	startValue := res.Register(Visit(node.StartValueNode, ctx))
-	if res.Err != nil {
+	if res.ShouldReturn() {
 		return res
 	}
 
 	stopValue := res.Register(Visit(node.StopValueNode, ctx))
-	if res.Err != nil {
+	if res.ShouldReturn() {
 		return res
 	}
 
 	var stepValue values.BaseValueInterface = &values.Integer{Value: 1}
 	if node.StepValueNode != nil {
 		stepValue = res.Register(Visit(node.StepValueNode, ctx))
-		if res.Err != nil {
+		if res.ShouldReturn() {
 			return res
 		}
 	}
@@ -337,9 +379,16 @@ func VisitForNode(node nodes.ForNode, ctx environment.Context) *RuntimeResult {
 		}
 
 		element := res.Register(Visit(node.BodyNode, ctx))
-		if res.Err != nil {
+		if res.ShouldReturn() && res.LoopShouldContinue == false && res.LoopShouldBreak == false {
 			return res
 		}
+		if res.LoopShouldContinue {
+			continue
+		}
+		if res.LoopShouldBreak {
+			break
+		}
+
 		if node.ShouldReturnNull == false {
 			elements = append(elements, element)
 		} //prevents unnecessary alloc
@@ -365,16 +414,23 @@ func VisitWhileNode(node nodes.WhileNode, ctx environment.Context) *RuntimeResul
 
 	for {
 		condition := res.Register(Visit(node.CondNode, ctx))
-		if res.Err != nil {
+		if res.ShouldReturn() {
 			return res
 		}
 		if !condition.IsTrue() {
 			break
 		}
 		element := res.Register(Visit(node.BodyNode, ctx))
-		if res.Err != nil {
+		if res.ShouldReturn() && res.LoopShouldContinue == false && res.LoopShouldBreak == false {
 			return res
 		}
+		if res.LoopShouldContinue {
+			continue
+		}
+		if res.LoopShouldBreak {
+			break
+		}
+
 		if node.ShouldReturnNull == false {
 			elements = append(elements, element)
 		} //prevents unnecessary alloc
@@ -404,7 +460,7 @@ func VisitFuncDefNode(node nodes.FuncDefNode, ctx environment.Context) *RuntimeR
 		argNames = append(argNames, node.ArgNameToks[i].Value.(string))
 	}
 	// funcValue := values.NewFunction(funcName, bodyNode, argNames)
-	funcValue := &values.Function{BodyNode: bodyNode, ArgNames: argNames, ShouldReturnNull: node.ShouldReturnNull, BaseFunction: values.BaseFunction{Name: funcName}}
+	funcValue := &values.Function{BodyNode: bodyNode, ArgNames: argNames, ShouldAutoReturn: node.ShouldAutoReturn, BaseFunction: values.BaseFunction{Name: funcName}}
 	funcValue.SetContext(ctx)
 	funcValue.SetValuePos(node.GetPosRange())
 
@@ -418,7 +474,7 @@ func VisitCallNode(node nodes.CallNode, ctx environment.Context) *RuntimeResult 
 	res := NewRuntimeResult()
 
 	valueToCall := res.Register(Visit(node.NodeToCall, ctx))
-	if res.Err != nil {
+	if res.ShouldReturn() {
 		return res
 	}
 	valueToCall = valueToCall.Copy()
@@ -427,12 +483,12 @@ func VisitCallNode(node nodes.CallNode, ctx environment.Context) *RuntimeResult 
 	args := make([]values.BaseValueInterface, 0, len(node.ArgNodes))
 	for i := 0; i < len(node.ArgNodes); i++ {
 		args = append(args, res.Register(Visit(node.ArgNodes[i], ctx)))
-		if res.Err != nil {
+		if res.ShouldReturn() {
 			return res
 		}
 	}
 	returnValue := res.Register(ExecuteCallable(valueToCall, args, node, ctx))
-	if res.Err != nil {
+	if res.ShouldReturn() {
 		return res
 	}
 	returnValue.SetContext(ctx)
@@ -444,11 +500,11 @@ func VisitItemAccessNode(node nodes.ItemAccessNode, ctx environment.Context) *Ru
 	res := NewRuntimeResult()
 
 	valueToAccess := res.Register(Visit(node.NodeToAccess, ctx))
-	if res.Err != nil {
+	if res.ShouldReturn() {
 		return res
 	}
 	key := res.Register(Visit(node.KeyNode, ctx))
-	if res.Err != nil {
+	if res.ShouldReturn() {
 		return res
 	}
 
@@ -466,11 +522,11 @@ func VisitItemDeleteNode(node nodes.ItemDeleteNode, ctx environment.Context) *Ru
 	res := NewRuntimeResult()
 
 	valueToAccess := res.Register(Visit(node.NodeToAccess, ctx))
-	if res.Err != nil {
+	if res.ShouldReturn() {
 		return res
 	}
 	key := res.Register(Visit(node.KeyNode, ctx))
-	if res.Err != nil {
+	if res.ShouldReturn() {
 		return res
 	}
 
@@ -482,6 +538,27 @@ func VisitItemDeleteNode(node nodes.ItemDeleteNode, ctx environment.Context) *Ru
 	result.SetContext(ctx)
 	result.SetValuePos(node.GetPosRange())
 	return res.Success(result)
+}
+
+func VisitReturnNode(node nodes.ReturnNode, ctx environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	var value values.BaseValueInterface = &values.Null{}
+	if node.NodeToReturn != nil {
+		value = res.Register(Visit(node.NodeToReturn, ctx))
+		if res.ShouldReturn() {
+			return res
+		}
+	}
+	return res.SuccessReturn(value)
+}
+
+func VisitContinueNode(node nodes.ContinueNode, ctx environment.Context) *RuntimeResult {
+	return NewRuntimeResult().SuccessContinue()
+}
+
+func VisitBreakNode(node nodes.BreakNode, ctx environment.Context) *RuntimeResult {
+	return NewRuntimeResult().SuccessBreak()
 }
 
 // *Built-in Functions
@@ -671,7 +748,7 @@ func PopulateArgs(callable values.BaseFunctionInterface, argNames []string, args
 func CheckAndPopulateArgs(callable values.BaseFunctionInterface, argNames []string, args []values.BaseValueInterface, execCtx environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 	res.Register(CheckArgs(callable, argNames, args))
-	if res.Err != nil {
+	if res.ShouldReturn() {
 		return res
 	}
 	PopulateArgs(callable, argNames, args, execCtx)
@@ -691,18 +768,23 @@ func ExecuteCallable(callableValue values.BaseValueInterface, args []values.Base
 		execCtx := c.GenerateNewContext()
 
 		res.Register(CheckAndPopulateArgs(c, c.ArgNames, args, execCtx))
-		if res.Err != nil {
+		if res.ShouldReturn() {
 			return res
 		}
 
 		value := res.Register(Visit(c.BodyNode, execCtx))
-		if res.Err != nil {
+		if res.ShouldReturn() && res.FuncReturnValue == nil {
 			return res
 		}
-		if c.ShouldReturnNull == true {
-			return res.Success(&values.Null{})
+
+		var retValue values.BaseValueInterface = &values.Null{}
+		if c.ShouldAutoReturn == true {
+			retValue = value
 		}
-		return res.Success(value)
+		if res.FuncReturnValue != nil {
+			retValue = res.FuncReturnValue
+		}
+		return res.Success(retValue)
 	case *values.BuiltInFunction:
 		execCtx := c.GenerateNewContext()
 
@@ -712,12 +794,12 @@ func ExecuteCallable(callableValue values.BaseValueInterface, args []values.Base
 		}
 
 		res.Register(CheckAndPopulateArgs(c, functionData.Args, args, execCtx))
-		if res.Err != nil {
+		if res.ShouldReturn() {
 			return res
 		}
 
 		value := res.Register(functionData.FunctionRef(c, execCtx))
-		if res.Err != nil {
+		if res.ShouldReturn() {
 			return res
 		}
 		return res.Success(value)

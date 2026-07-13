@@ -89,6 +89,9 @@ var Keywords = []string{
 	"while",
 	"func",
 	"end",
+	"return",
+	"continue",
+	"break",
 }
 
 type Token struct {

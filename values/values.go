@@ -826,7 +826,7 @@ type Function struct {
 	BaseFunction
 	BodyNode         nodes.Node
 	ArgNames         []string
-	ShouldReturnNull bool
+	ShouldAutoReturn bool
 }
 
 func (self *Function) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
@@ -842,7 +842,7 @@ func (self *Function) LNot() (BaseValueInterface, *errors.Error) {
 	return res, nil
 }
 func (self *Function) Copy() BaseValueInterface {
-	copy := &Function{BodyNode: self.BodyNode, ArgNames: self.ArgNames, ShouldReturnNull: self.ShouldReturnNull, BaseFunction: BaseFunction{Name: self.Name}}
+	copy := &Function{BodyNode: self.BodyNode, ArgNames: self.ArgNames, ShouldAutoReturn: self.ShouldAutoReturn, BaseFunction: BaseFunction{Name: self.Name}}
 	copy.SetValuePos(self.GetPosRange())
 	copy.SetContext(self.GetContext())
 	return copy

@@ -6,6 +6,7 @@ import (
 
 	"github.com/DGTV11/weh-script/errors"
 	"github.com/DGTV11/weh-script/nodes"
+	"github.com/DGTV11/weh-script/position"
 	"github.com/DGTV11/weh-script/tokens"
 )
 
@@ -158,7 +159,10 @@ func (p *Parser) ListExpr() *ParseResult {
 		p.Advance()
 	}
 
-	return res.Success(nodes.NewListNode(elementNodes, posStart, p.CurrentToken.PosRange.End.Copy()))
+	return res.Success(nodes.ListNode{
+		ElementNodes: elementNodes,
+		BaseNode:     nodes.BaseNode{position.PositionRange{Start: posStart, End: p.CurrentToken.PosRange.End.Copy()}},
+	})
 }
 
 func (p *Parser) IfExprCases(caseKeyword string) *ParseResult {
@@ -216,7 +220,7 @@ func (p *Parser) IfExprCases(caseKeyword string) *ParseResult {
 			draftIfNode.ElseCase = newDraftIfNode.(nodes.IfNode).ElseCase
 		}
 	} else {
-		expr := res.Register(p.Expr())
+		expr := res.Register(p.Statement())
 		if res.Err != nil {
 			return res
 		}
@@ -276,7 +280,7 @@ func (p *Parser) IfExprC() *ParseResult {
 				)
 			}
 		} else {
-			expr := res.Register(p.Expr())
+			expr := res.Register(p.Statement())
 			if res.Err != nil {
 				return res
 			}
@@ -302,80 +306,6 @@ func (p *Parser) IfExprBOrC() *ParseResult {
 
 	return res.Success(draftIfNode)
 }
-
-// func (p *Parser) IfExpr() *ParseResult {
-// 	res := NewParseResult()
-// 	var cases []nodes.IfCase
-// 	var elseCase nodes.Node = nil
-//
-// 	if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, "if") {
-// 		return res.Failure(
-// 			errors.NewInvalidSyntaxError(
-// 				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
-// 				"Expected 'if'",
-// 			),
-// 		)
-// 	}
-// 	res.RegisterAdvance()
-// 	p.Advance()
-// 	condition := res.Register(p.Expr())
-// 	if res.Err != nil {
-// 		return res
-// 	}
-//
-// 	if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, "then") {
-// 		return res.Failure(
-// 			errors.NewInvalidSyntaxError(
-// 				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
-// 				"Expected 'then'",
-// 			),
-// 		)
-// 	}
-// 	res.RegisterAdvance()
-// 	p.Advance()
-// 	expr := res.Register(p.Expr())
-// 	if res.Err != nil {
-// 		return res
-// 	}
-//
-// 	cases = append(cases, nodes.IfCase{Cond: condition, Expr: expr})
-//
-// 	for p.CurrentToken.Matches(tokens.TokenTypeKeyword, "elif") {
-// 		res.RegisterAdvance()
-// 		p.Advance()
-// 		condition := res.Register(p.Expr())
-// 		if res.Err != nil {
-// 			return res
-// 		}
-//
-// 		if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, "then") {
-// 			return res.Failure(
-// 				errors.NewInvalidSyntaxError(
-// 					p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
-// 					"Expected 'then'",
-// 				),
-// 			)
-// 		}
-// 		res.RegisterAdvance()
-// 		p.Advance()
-// 		expr := res.Register(p.Expr())
-// 		if res.Err != nil {
-// 			return res
-// 		}
-//
-// 		cases = append(cases, nodes.IfCase{Cond: condition, Expr: expr})
-// 	}
-//
-// 	if p.CurrentToken.Matches(tokens.TokenTypeKeyword, "else") {
-// 		res.RegisterAdvance()
-// 		p.Advance()
-// 		elseCase = res.Register(p.Expr())
-// 		if res.Err != nil {
-// 			return res
-// 		}
-// 	}
-// 	return res.Success(nodes.NewIfNode(cases, elseCase))
-// }
 
 func (p *Parser) ForExpr() *ParseResult {
 	res := NewParseResult()
@@ -481,7 +411,7 @@ func (p *Parser) ForExpr() *ParseResult {
 		return res.Success(nodes.NewForNode(varName, startValue, stopValue, stepValue, body, true))
 	}
 
-	body := res.Register(p.Expr())
+	body := res.Register(p.Statement())
 	if res.Err != nil {
 		return res
 	}
@@ -543,7 +473,7 @@ func (p *Parser) WhileExpr() *ParseResult {
 		return res.Success(nodes.NewWhileNode(condition, body, true))
 	}
 
-	body := res.Register(p.Expr())
+	body := res.Register(p.Statement())
 	if res.Err != nil {
 		return res
 	}
@@ -649,7 +579,7 @@ func (p *Parser) FuncDef() *ParseResult {
 		}
 
 		return res.Success(
-			nodes.NewFuncDefNode(varNameTok, argNameToks, body, false),
+			nodes.NewFuncDefNode(varNameTok, argNameToks, body, true),
 		)
 	}
 
@@ -683,7 +613,7 @@ func (p *Parser) FuncDef() *ParseResult {
 	p.Advance()
 
 	return res.Success(
-		nodes.NewFuncDefNode(varNameTok, argNameToks, body, true),
+		nodes.NewFuncDefNode(varNameTok, argNameToks, body, false),
 	)
 }
 
@@ -1021,7 +951,7 @@ func (p *Parser) Statements() *ParseResult {
 		p.Advance()
 	}
 
-	statement := res.Register(p.Expr())
+	statement := res.Register(p.Statement())
 	if res.Err != nil {
 		return res
 	}
@@ -1043,7 +973,7 @@ func (p *Parser) Statements() *ParseResult {
 		if moreStatements == false {
 			break
 		}
-		statement := res.TryRegister(p.Expr())
+		statement := res.TryRegister(p.Statement())
 		if statement == nil {
 			p.Reverse(res.ToReverseCount)
 			moreStatements = false
@@ -1052,7 +982,52 @@ func (p *Parser) Statements() *ParseResult {
 		statements = append(statements, statement)
 	}
 
-	return res.Success(nodes.NewListNode(statements, posStart, p.CurrentToken.PosRange.End.Copy()))
+	return res.Success(nodes.ListNode{
+		ElementNodes: statements,
+		BaseNode:     nodes.BaseNode{position.PositionRange{Start: posStart, End: p.CurrentToken.PosRange.End.Copy()}},
+	})
+}
+
+func (p *Parser) Statement() *ParseResult {
+	res := NewParseResult()
+	posStart := p.CurrentToken.PosRange.Start.Copy()
+
+	if p.CurrentToken.Matches(tokens.TokenTypeKeyword, "return") {
+		res.RegisterAdvance()
+		p.Advance()
+
+		expr := res.TryRegister(p.Expr())
+		if expr == nil {
+			p.Reverse(res.ToReverseCount)
+		}
+		return res.Success(nodes.ReturnNode{
+			NodeToReturn: expr,
+			BaseNode:     nodes.BaseNode{position.PositionRange{Start: posStart, End: p.CurrentToken.PosRange.End.Copy()}},
+		})
+	} else if p.CurrentToken.Matches(tokens.TokenTypeKeyword, "continue") {
+		res.RegisterAdvance()
+		p.Advance()
+		return res.Success(nodes.ContinueNode{
+			BaseNode: nodes.BaseNode{position.PositionRange{Start: posStart, End: p.CurrentToken.PosRange.End.Copy()}},
+		})
+	} else if p.CurrentToken.Matches(tokens.TokenTypeKeyword, "break") {
+		res.RegisterAdvance()
+		p.Advance()
+		return res.Success(nodes.BreakNode{
+			BaseNode: nodes.BaseNode{position.PositionRange{Start: posStart, End: p.CurrentToken.PosRange.End.Copy()}},
+		})
+	}
+
+	expr := res.Register(p.Expr())
+	if res.Err != nil {
+		return res.Failure(
+			errors.NewInvalidSyntaxError(
+				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+				"Expected 'return', 'continue', 'break', 'var', 'del', 'if', 'for', 'while', 'func', integer, float, identifier, '+', '-', '(', '[' or '!'",
+			),
+		)
+	}
+	return res.Success(expr)
 }
 
 //*BinOp helpers
