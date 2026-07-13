@@ -73,48 +73,6 @@ type VariableAccessNode struct {
 	VarNameTok tokens.Token
 }
 
-func NewVariableAccessNode(varNameTok tokens.Token) VariableAccessNode {
-	return VariableAccessNode{
-		VarNameTok: varNameTok,
-		BaseNode:   BaseNode{PosRange: position.PositionRange{Start: varNameTok.PosRange.Start, End: varNameTok.PosRange.End}},
-	}
-}
-func (n VariableAccessNode) String() string {
-	return fmt.Sprintf("(ACCESS %v)", n.VarNameTok)
-}
-
-type VariableAssignNode struct {
-	BaseNode
-	VarNameTok tokens.Token
-	ValueNode  Node
-}
-
-func NewVariableAssignNode(varNameTok tokens.Token, valueNode Node) VariableAssignNode {
-	return VariableAssignNode{
-		VarNameTok: varNameTok,
-		ValueNode:  valueNode,
-		BaseNode:   BaseNode{PosRange: position.PositionRange{Start: varNameTok.PosRange.Start, End: varNameTok.PosRange.End}},
-	}
-}
-func (n VariableAssignNode) String() string {
-	return fmt.Sprintf("(ASSIGN %v = %v)", n.VarNameTok, n.ValueNode)
-}
-
-type VariableDeleteNode struct {
-	BaseNode
-	VarNameTok tokens.Token
-}
-
-func NewVariableDeleteNode(varNameTok tokens.Token) VariableDeleteNode {
-	return VariableDeleteNode{
-		VarNameTok: varNameTok,
-		BaseNode:   BaseNode{PosRange: position.PositionRange{Start: varNameTok.PosRange.Start, End: varNameTok.PosRange.End}},
-	}
-}
-func (n VariableDeleteNode) String() string {
-	return fmt.Sprintf("(DELETE %v)", n.VarNameTok)
-}
-
 type BinOpNode struct {
 	BaseNode
 	LeftNode  Node
@@ -305,6 +263,48 @@ func NewCallNode(nodeToCall Node, argNodes []Node) CallNode {
 
 func (n CallNode) String() string {
 	return fmt.Sprintf("(CALL %v ARGS %v)", n.NodeToCall, n.ArgNodes)
+}
+
+func NewVariableAccessNode(varNameTok tokens.Token) VariableAccessNode {
+	return VariableAccessNode{
+		VarNameTok: varNameTok,
+		BaseNode:   BaseNode{PosRange: position.PositionRange{Start: varNameTok.PosRange.Start, End: varNameTok.PosRange.End}},
+	}
+}
+func (n VariableAccessNode) String() string {
+	return fmt.Sprintf("(ACCESS %v)", n.VarNameTok)
+}
+
+type VariableAssignNode struct {
+	BaseNode
+	VarNameTok tokens.Token
+	ValueNode  Node
+}
+
+func NewVariableAssignNode(varNameTok tokens.Token, valueNode Node) VariableAssignNode {
+	return VariableAssignNode{
+		VarNameTok: varNameTok,
+		ValueNode:  valueNode,
+		BaseNode:   BaseNode{PosRange: position.PositionRange{Start: varNameTok.PosRange.Start, End: varNameTok.PosRange.End}},
+	}
+}
+func (n VariableAssignNode) String() string {
+	return fmt.Sprintf("(ASSIGN %v = %v)", n.VarNameTok, n.ValueNode)
+}
+
+type VariableDeleteNode struct {
+	BaseNode
+	VarNameTok tokens.Token
+}
+
+func NewVariableDeleteNode(varNameTok tokens.Token) VariableDeleteNode {
+	return VariableDeleteNode{
+		VarNameTok: varNameTok,
+		BaseNode:   BaseNode{PosRange: position.PositionRange{Start: varNameTok.PosRange.Start, End: varNameTok.PosRange.End}},
+	}
+}
+func (n VariableDeleteNode) String() string {
+	return fmt.Sprintf("(DELETE %v)", n.VarNameTok)
 }
 
 type ItemAccessNode struct {
