@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 	"unsafe"
-
 	// "reflect"
 
 	"github.com/spf13/pflag"
@@ -119,15 +118,12 @@ func shell() {
 			if err != nil {
 				fmt.Println(err)
 				// } else if reflect.TypeOf(res).String() != "*values.Null" {
-			} else if res != nil {
-				resV := res.(*values.List)
-				if len(resV.Elements) == 1 {
-					fmt.Println(resV.Elements[0])
-				} else {
-					fmt.Println(res)
-				}
+			}
+			// if reflect.TypeOf(res).String() != "*values.Null" {
+			if _, ok := res.(*values.Null); ok == false {
+				fmt.Println(res)
 
-				// globalSymbolTable.SetSymbol("_", res) //TODO: update '_' variable after every expression (separate statementsnode?)
+				globalSymbolTable.SetSymbol("_", res)
 			}
 			if viewExecutionTimes == true {
 				fmt.Printf("\n===========================\nlexer %v\nparser %v\ninterpreter %v\n---------------------------\ntotal %v\n===========================\n", lexerElapsed, parserElapsed, interpreterElapsed, elapsed)
@@ -152,7 +148,6 @@ func runFile(fp string) {
 
 	if err != nil {
 		fmt.Println(err)
-		// } else if reflect.TypeOf(res).String() != "*values.Null" {
 	}
 	if viewExecutionTimes == true {
 		fmt.Printf("\n===========================\nlexer %v\nparser %v\ninterpreter %v\n---------------------------\ntotal %v\n===========================\n", lexerElapsed, parserElapsed, interpreterElapsed, elapsed)
