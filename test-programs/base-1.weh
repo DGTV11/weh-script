@@ -1,0 +1,30 @@
+# Adapted from https://www.youtube.com/watch?v=-7a0ys7gF5E&list=PLZQftyCk7_SdoVexSmwy_tBgs7P0b97yD&index=15
+
+func oopify(prefix) => prefix+"oop"
+func join(elements, separator)
+  var res = ""
+  # print(elements)
+  var l = len(elements)
+  for i=0 to l then
+    var res = res + elements[i] 
+    if i!=l-1 then var res = res+separator
+  end
+  return res
+end
+
+func map(elements, f)
+  var new_elements = []
+
+  for i=0 to len(elements) then
+    append(new_elements, f(elements[i]))
+  end
+  return new_elements
+end
+
+print("Hello world!")
+
+for i=0 to 5 then
+  print(join(map(["l", "sp"], oopify), ", "))
+  # print(oopify("l"))
+  # print(oopify("sp"))
+end

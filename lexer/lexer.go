@@ -60,9 +60,15 @@ func (l *Lexer) Tokenise() ([]tokens.Token, *errors.Error) {
 		case '\n':
 			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeNewline, nil, &l.Position, nil))
 			l.Advance()
+			// for l.CurrentChar != nil && (*l.CurrentChar != '\n' || *l.CurrentChar == ';') {
+			// 	l.Advance()
+			// }
 		case ';':
 			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeNewline, nil, &l.Position, nil))
 			l.Advance()
+			// for l.CurrentChar != nil && (*l.CurrentChar != '\n' || *l.CurrentChar == ';') {
+			// 	l.Advance()
+			// }
 		case '"':
 			posStart := l.Position.Copy()
 			tokp := l.MakeString()

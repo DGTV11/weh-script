@@ -922,8 +922,8 @@ func (p *Parser) Expr() *ParseResult {
 			}
 		}
 		delNode = nodes.NewItemDeleteNode(delNode.(nodes.ItemAccessNode).NodeToAccess, delNode.(nodes.ItemAccessNode).KeyNode)
-		res.RegisterAdvance()
-		p.Advance()
+		// res.RegisterAdvance()
+		// p.Advance()
 
 		return res.Success(delNode)
 	}
@@ -991,7 +991,7 @@ func (p *Parser) Statements() *ParseResult {
 func (p *Parser) Statement() *ParseResult {
 	res := NewParseResult()
 	posStart := p.CurrentToken.PosRange.Start.Copy()
-
+	// fmt.Println("Statement:", p.CurrentToken)
 	if p.CurrentToken.Matches(tokens.TokenTypeKeyword, "return") {
 		res.RegisterAdvance()
 		p.Advance()
