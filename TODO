@@ -1,5 +1,4 @@
 1) finish up good goods 
-  - add imports
   - add file I/0
   - prevent var redeclaration (instead put a separate '=' rule alongside var assign in expr -> 
     - make variable assign/update node
