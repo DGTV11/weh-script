@@ -1,6 +1,4 @@
-1) finish the tutorials
-  - STOPPED AT: https://www.youtube.com/watch?v=uccr-hbp9KQ&list=PLZQftyCk7_SdoVexSmwy_tBgs7P0b97yD&index=14
-2) finish up good goods 
+1) finish up good goods 
   - add imports
   - add file I/0
   - prevent var redeclaration (instead put a separate '=' rule alongside var assign in expr -> 
