@@ -3,6 +3,7 @@ package interpreter
 import (
 	"fmt"
 	"log"
+	"maps"
 	"os"
 	"reflect"
 
@@ -10,10 +11,29 @@ import (
 
 	"github.com/DGTV11/weh-script/environment"
 	"github.com/DGTV11/weh-script/errors"
+	"github.com/DGTV11/weh-script/lexer"
 	"github.com/DGTV11/weh-script/nodes"
+	"github.com/DGTV11/weh-script/parser"
 	"github.com/DGTV11/weh-script/tokens"
 	"github.com/DGTV11/weh-script/values"
 )
+
+// *Setup
+func SetupGlobalSymbolTable() *environment.SymbolTable {
+	GlobalSymbolTable := environment.SymbolTable{Symbols: map[string]any{}}
+
+	//*Load constants
+	GlobalSymbolTable.SetSymbol("null", &values.Null{})
+	GlobalSymbolTable.SetSymbol("true", &values.Integer{Value: 1})
+	GlobalSymbolTable.SetSymbol("false", &values.Integer{Value: 0})
+
+	//*Load functions
+	for funcName := range maps.Keys(BuiltInFunctionTable) {
+		GlobalSymbolTable.SetSymbol(funcName, &values.BuiltInFunction{BaseFunction: values.BaseFunction{Name: &funcName}})
+	}
+
+	return &GlobalSymbolTable
+}
 
 // *RuntimeResult
 type RuntimeResult struct {
@@ -119,6 +139,8 @@ func Visit(node nodes.Node, ctx environment.Context) *RuntimeResult {
 		return VisitContinueNode(node.(nodes.ContinueNode), ctx)
 	case nodes.BreakNode:
 		return VisitBreakNode(node.(nodes.BreakNode), ctx)
+	case nodes.ImportNode:
+		return VisitImportNode(node.(nodes.ImportNode), ctx)
 	default:
 		posRange := node.GetPosRange()
 		return NewRuntimeResult().Failure(errors.NewNotImplementedError(posRange.Start, posRange.End, fmt.Sprintf("No Visit function defined for node type %T", n), ctx))
@@ -578,6 +600,37 @@ func VisitContinueNode(node nodes.ContinueNode, ctx environment.Context) *Runtim
 
 func VisitBreakNode(node nodes.BreakNode, ctx environment.Context) *RuntimeResult {
 	return NewRuntimeResult().SuccessBreak()
+}
+
+func VisitImportNode(node nodes.ImportNode, ctx environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	modulePath := node.ModulePathTok.Value.(string)
+	programBytestr, Rerr := os.ReadFile(modulePath)
+	if Rerr != nil {
+		return res.Failure(errors.NewRuntimeError(node.GetPosRange().Start, node.GetPosRange().End, Rerr.Error(), ctx))
+	}
+
+	program := string(programBytestr)
+
+	_lexer := lexer.NewLexer(modulePath, program)
+	tokens, Lerr := _lexer.Tokenise()
+	if Lerr != nil {
+		return res.Failure(Lerr)
+	}
+
+	_parser := parser.NewParser(tokens)
+	ast := _parser.Parse()
+	if ast.Err != nil {
+		return res.Failure(ast.Err)
+	}
+
+	Iresult := Visit(ast.Node, ctx)
+	if Iresult.Err != nil {
+		return res.Failure(Iresult.Err)
+	}
+
+	return res.Success(&values.Null{})
 }
 
 // *Built-in Functions

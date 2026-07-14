@@ -81,6 +81,7 @@ func (p *Parser) UpdateCurrentTok() {
 func (p *Parser) Advance() *tokens.Token {
 	p.TokenIndex++
 	p.UpdateCurrentTok()
+	// fmt.Println(tokens.TokenTypeNameMap[p.CurrentToken.Type])
 	return p.CurrentToken
 }
 
@@ -119,15 +120,15 @@ func (p *Parser) Statements() *ParseResult {
 
 	moreStatements := true
 
-	// statement := res.Register(p.Statement())
-	// if res.Err != nil {
-	// 	return res
-	// }
-	statement := res.TryRegister(p.Statement())
-	if statement == nil {
-		p.Reverse(res.ToReverseCount)
-		goto finishStatements
+	statement := res.Register(p.Statement())
+	if res.Err != nil {
+		return res
 	}
+	// statement := res.TryRegister(p.Statement())
+	// if statement == nil {
+	// 	p.Reverse(res.ToReverseCount)
+	// 	goto finishStatements
+	// }
 	statements = append(statements, statement)
 
 	for {
@@ -153,7 +154,7 @@ func (p *Parser) Statements() *ParseResult {
 		statements = append(statements, statement)
 	}
 
-finishStatements:
+	// finishStatements:
 	return res.Success(nodes.StatementsNode{
 		StatementNodes: statements,
 		BaseNode:       nodes.BaseNode{position.PositionRange{Start: posStart, End: p.CurrentToken.PosRange.End.Copy()}},
@@ -188,6 +189,23 @@ func (p *Parser) Statement() *ParseResult {
 		return res.Success(nodes.BreakNode{
 			BaseNode: nodes.BaseNode{position.PositionRange{Start: posStart, End: p.CurrentToken.PosRange.End.Copy()}},
 		})
+	} else if p.CurrentToken.Matches(tokens.TokenTypeKeyword, "import") {
+		res.RegisterAdvance()
+		p.Advance()
+
+		modulePathTok := *p.CurrentToken
+		if modulePathTok.Type != tokens.TokenTypeString {
+			return res.Failure(
+				errors.NewInvalidSyntaxError(
+					modulePathTok.PosRange.Start, modulePathTok.PosRange.End,
+					"Expected String literal",
+				),
+			)
+		}
+		res.RegisterAdvance()
+		p.Advance()
+
+		return res.Success(nodes.NewImportNode(modulePathTok))
 	}
 
 	expr := res.Register(p.Expr())
@@ -247,10 +265,10 @@ func (p *Parser) Expr() *ParseResult {
 		p.Advance()
 
 		tok = *p.CurrentToken
-		if tok.Type != tokens.TokenTypeIdentifier {
+		if p.CurrentToken.Type != tokens.TokenTypeIdentifier {
 			return res.Failure(
 				errors.NewInvalidSyntaxError(
-					tok.PosRange.Start, tok.PosRange.End,
+					p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
 					"Expected identifier",
 				),
 			)

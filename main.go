@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"log"
-	"maps"
 	"os"
 	"path/filepath"
 	"strings"
@@ -23,22 +22,6 @@ import (
 )
 
 const _ = uint(1) / (uint(unsafe.Sizeof(int(0))) - 7) //ensures that size of int == size of int64
-
-func SetupGlobalSymbolTable() *environment.SymbolTable {
-	GlobalSymbolTable := environment.SymbolTable{Symbols: map[string]any{}}
-
-	//*Load constants
-	GlobalSymbolTable.SetSymbol("null", &values.Null{})
-	GlobalSymbolTable.SetSymbol("true", &values.Integer{Value: 1})
-	GlobalSymbolTable.SetSymbol("false", &values.Integer{Value: 0})
-
-	//*Load functions
-	for funcName := range maps.Keys(interpreter.BuiltInFunctionTable) {
-		GlobalSymbolTable.SetSymbol(funcName, &values.BuiltInFunction{BaseFunction: values.BaseFunction{Name: &funcName}})
-	}
-
-	return &GlobalSymbolTable
-}
 
 func Run(fileName string, text string, globalSymbolTable *environment.SymbolTable) (any, *errors.Error) {
 	if viewExecutionTimes == true {
@@ -95,7 +78,7 @@ func shell() {
 	if bytecodeMode == true {
 		log.Fatal("Bytecode VM not implemented")
 	} else {
-		globalSymbolTable := SetupGlobalSymbolTable()
+		globalSymbolTable := interpreter.SetupGlobalSymbolTable()
 
 		for {
 			fmt.Print("wehscript > ")
@@ -142,7 +125,7 @@ func runFile(fp string) {
 	}
 
 	program := string(programBytestr)
-	globalSymbolTable := SetupGlobalSymbolTable()
+	globalSymbolTable := interpreter.SetupGlobalSymbolTable()
 	_, err := Run(fp, program, globalSymbolTable)
 
 	if err != nil {
@@ -151,7 +134,6 @@ func runFile(fp string) {
 	if viewExecutionTimes == true {
 		fmt.Printf("\n===========================\nlexer %v\nparser %v\ninterpreter %v\n---------------------------\ntotal %v\n===========================\n", lexerElapsed, parserElapsed, interpreterElapsed, elapsed)
 	}
-
 }
 
 func main() {

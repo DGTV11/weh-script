@@ -92,6 +92,7 @@ var Keywords = []string{
 	"return",
 	"continue",
 	"break",
+	"import",
 }
 
 type Token struct {

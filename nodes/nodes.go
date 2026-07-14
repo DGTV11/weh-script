@@ -372,3 +372,19 @@ type BreakNode struct {
 func (n BreakNode) String() string {
 	return "(BREAK)"
 }
+
+type ImportNode struct {
+	BaseNode
+	ModulePathTok tokens.Token
+}
+
+func NewImportNode(modulePathTok tokens.Token) ImportNode {
+	return ImportNode{
+		ModulePathTok: modulePathTok,
+		BaseNode:      BaseNode{PosRange: position.PositionRange{Start: modulePathTok.PosRange.Start, End: modulePathTok.PosRange.End}},
+	}
+}
+
+func (n ImportNode) String() string {
+	return fmt.Sprintf("(IMPORT %v)", n.ModulePathTok)
+}
