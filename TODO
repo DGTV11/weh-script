@@ -1,5 +1,6 @@
 1) finish up good goods 
   - add file I/0
+  - separate String() from Repr() or smth similar in Values (e.g. and esp. to remove "" in printing of String)
   - prevent var redeclaration (instead put a separate '=' rule alongside var assign in expr -> 
     - make variable assign/update node
     - make item assign/update node
@@ -13,4 +14,4 @@
   - explain syntax/CLI in TODO or smth
 2) make bytecode compiler + reg-based VM (give option to choose between AST tree-walk interpreter and bytecode interpreter, especially when running .weh script)
   - maybe (PLT-inspired) trap style stdlib?
-3) make language bundled thingy (which can be compiled to portable executable) or stick with bytecode files
+3) make language bundled thingy (which can be compiled to portable executable) or stick with .wvn ('wyvern'?) bytecode files
