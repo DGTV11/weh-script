@@ -1,4 +1,4 @@
-statements  : Newline* statement (Newline+ statement)* Newline*
+statements  : Newline* (statement (Newline+ statement)* Newline*)?
 
 statement   : Keyword:return expr?
             : Keyword:continue

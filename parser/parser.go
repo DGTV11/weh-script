@@ -951,13 +951,18 @@ func (p *Parser) Statements() *ParseResult {
 		p.Advance()
 	}
 
-	statement := res.Register(p.Statement())
-	if res.Err != nil {
-		return res
+	moreStatements := true
+
+	// statement := res.Register(p.Statement())
+	// if res.Err != nil {
+	// 	return res
+	// }
+	statement := res.TryRegister(p.Statement())
+	if statement == nil {
+		p.Reverse(res.ToReverseCount)
+		goto finishStatements
 	}
 	statements = append(statements, statement)
-
-	moreStatements := true
 
 	for {
 		newlineCount := 0
@@ -982,6 +987,7 @@ func (p *Parser) Statements() *ParseResult {
 		statements = append(statements, statement)
 	}
 
+finishStatements:
 	return res.Success(nodes.StatementsNode{
 		StatementNodes: statements,
 		BaseNode:       nodes.BaseNode{position.PositionRange{Start: posStart, End: p.CurrentToken.PosRange.End.Copy()}},

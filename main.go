@@ -118,9 +118,8 @@ func shell() {
 			if err != nil {
 				fmt.Println(err)
 				// } else if reflect.TypeOf(res).String() != "*values.Null" {
-			}
-			// if reflect.TypeOf(res).String() != "*values.Null" {
-			if _, ok := res.(*values.Null); ok == false {
+			} else if _, ok := res.(*values.Null); ok == false {
+				// if reflect.TypeOf(res).String() != "*values.Null" {
 				fmt.Println(res)
 
 				globalSymbolTable.SetSymbol("_", res)
