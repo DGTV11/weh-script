@@ -3,10 +3,11 @@
 func fib(n)
   var a=0.0
   var b=1.0
+  var c
   for i=0 to n then
-    var c=a+b
-    var a=b
-    var b=c
+    c=a+b
+    a=b
+    b=c
   end
 end
 

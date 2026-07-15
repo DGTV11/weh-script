@@ -1,65 +1,76 @@
-statements  : Newline* statement (Newline+ statement)* Newline*
+statements    : Newline* statement (Newline+ statement)* Newline*
+              
+statement     : Keyword:return expr?
+              : Keyword:continue
+              : Keyword:break
+              : Keyword:import String
+              : expr
+              
+expr          : Keyword:var Identifier (Equals expr)?
+              : mutation
+              
+mutation      : Keyword:del reassignable
+              : reassign
+              : lor-expr
 
-statement   : Keyword:return expr?
-            : Keyword:continue
-            : Keyword:break
-            : Keyword:import String
-            : expr
-
-expr        : Keyword:var Identifier Equals expr
-            : Keyword:del Identifier (Lsquare expr Rsquare)*
-            : comp-expr ((LAnd|LOr) comp-expr)*
-
-comp-expr   : LNot comp-expr
-            : arith-expr ((EE|NE|LT|GT|LTE|GTE) arith-expr)*
-
-arith-expr  : term ((Plus|Minus) term)*
-
-term        : factor ((Mul|Div) factor)*
-
-factor      : (Plus|Minus) factor
-            : power
-            
-power       : call ((Pow) factor)*
-
-call        : atom (
-              Lparen (expr (Comma expr)*)? Rparen
-            | Lsquare expr Rsquare
-              )*
-            
-atom        : Int|Float|String|Identifier
-            : Lparen expr Rparen
-            : list-expr
-            : if-expr
-            : for-expr
-            : while-expr
-            : func-def
-
-list-expr   : Lsquare (expr (Comma expr)*)? Rsquare
-
-if-expr     : Keyword:if expr Keyword:then
-              (statement if-expr-b|if-expr-c?)
-            | (Newline statements Keyword:end|if-expr-b|if-expr-c)
-
-if-expr-b   : Keyword:elif expr Keyword:then
-              (statement if-expr-b|if-expr-c?)
-            | (Newline statements Keyword:end|if-expr-b|if-expr-c)
-
-if-expr-c   : Keyword:else
-              statement
-            | (Newline statements Keyword:end)
-
-for-expr    : Keyword:for Identifier Equals expr Keyword:to expr
-              (Keyword:step expr)? Keyword:then 
-              statement
-            | (Newline statements Keyword:end)
-
-while-expr  : Keyword:while expr Keyword:then
-              statement
-            | (Newline statements Keyword:end)
-
-func-def    : Keyword:func Identifier?
-              Lparen (Identifier (Comma Identifier)*)? Rparen
-              (Arrow expr)
-            | (Newline statements Keyword:end)
+reassign      : reassignable Equals mutation
+              
+reassignable  : Identifier (Lsquare expr Rsquare)*
+              
+lor-expr      : and-expr ((LOr) and-expr)*
+              
+land-expr     : comp-expr ((LAnd) comp-expr)*
+              
+comp-expr     : LNot comp-expr
+              : arith-expr ((EE|NE|LT|GT|LTE|GTE) arith-expr)*
+              
+arith-expr    : term ((Plus|Minus) term)*
+              
+term          : factor ((Mul|Div) factor)*
+              
+factor        : (Plus|Minus) factor
+              : power
+              
+power         : call ((Pow) factor)*
+              
+call          : atom (
+                Lparen (expr (Comma expr)*)? Rparen
+              | Lsquare expr Rsquare
+                )*
+              
+atom          : Int|Float|String|Identifier
+              : Lparen expr Rparen
+              : list-expr
+              : if-expr
+              : for-expr
+              : while-expr
+              : func-def
+              
+list-expr     : Lsquare (expr (Comma expr)*)? Rsquare
+              
+if-expr       : Keyword:if expr Keyword:then
+                (statement if-expr-b|if-expr-c?)
+              | (Newline statements Keyword:end|if-expr-b|if-expr-c)
+              
+if-expr-b     : Keyword:elif expr Keyword:then
+                (statement if-expr-b|if-expr-c?)
+              | (Newline statements Keyword:end|if-expr-b|if-expr-c)
+              
+if-expr-c     : Keyword:else
+                statement
+              | (Newline statements Keyword:end)
+              
+for-expr      : Keyword:for Identifier Equals expr Keyword:to expr
+                (Keyword:step expr)? Keyword:then 
+                statement
+              | (Newline statements Keyword:end)
+              
+while-expr    : Keyword:while expr Keyword:then
+                statement
+              | (Newline statements Keyword:end)
+              
+func-def      : Keyword:func Identifier?
+                Lparen (Identifier (Comma Identifier)*)? Rparen
+                (Arrow expr)
+              | (Newline statements Keyword:end)
 

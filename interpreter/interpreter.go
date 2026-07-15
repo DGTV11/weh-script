@@ -113,6 +113,8 @@ func Visit(node nodes.Node, ctx environment.Context) *RuntimeResult {
 		return VisitVariableAccessNode(node.(nodes.VariableAccessNode), ctx)
 	case nodes.VariableAssignNode:
 		return VisitVariableAssignNode(node.(nodes.VariableAssignNode), ctx)
+	case nodes.VariableReassignNode:
+		return VisitVariableReassignNode(node.(nodes.VariableReassignNode), ctx)
 	case nodes.VariableDeleteNode:
 		return VisitVariableDeleteNode(node.(nodes.VariableDeleteNode), ctx)
 	case nodes.BinOpNode:
@@ -131,6 +133,8 @@ func Visit(node nodes.Node, ctx environment.Context) *RuntimeResult {
 		return VisitCallNode(node.(nodes.CallNode), ctx)
 	case nodes.ItemAccessNode:
 		return VisitItemAccessNode(node.(nodes.ItemAccessNode), ctx)
+	case nodes.ItemAssignNode:
+		return VisitItemAssignNode(node.(nodes.ItemAssignNode), ctx)
 	case nodes.ItemDeleteNode:
 		return VisitItemDeleteNode(node.(nodes.ItemDeleteNode), ctx)
 	case nodes.ReturnNode:
@@ -230,12 +234,36 @@ func VisitVariableAccessNode(node nodes.VariableAccessNode, ctx environment.Cont
 func VisitVariableAssignNode(node nodes.VariableAssignNode, ctx environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 	varName := node.VarNameTok.Value.(string)
+
+	var value values.BaseValueInterface = &values.Null{}
+	if node.ValueNode != nil {
+		value = res.Register(Visit(node.ValueNode, ctx))
+		if res.ShouldReturn() {
+			return res
+		}
+	}
+
+	stRes := ctx.SymTable.SetSymbol(varName, value)
+	if stRes == false {
+		posRange := node.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, fmt.Sprintf("'%s' is already defined", varName), ctx))
+	}
+	return res.Success(value)
+}
+
+func VisitVariableReassignNode(node nodes.VariableReassignNode, ctx environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+	varName := node.VarNameTok.Value.(string)
 	value := res.Register(Visit(node.ValueNode, ctx))
 	if res.ShouldReturn() {
 		return res
 	}
 
-	ctx.SymTable.SetSymbol(varName, value)
+	stRes := ctx.SymTable.UpdateSymbol(varName, value)
+	if stRes == false {
+		posRange := node.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, fmt.Sprintf("'%s' is not defined", varName), ctx))
+	}
 	return res.Success(value)
 }
 
@@ -413,7 +441,7 @@ func VisitForNode(node nodes.ForNode, ctx environment.Context) *RuntimeResult {
 	}
 
 	for condRes.IsTrue() {
-		ctx.SymTable.SetSymbol(node.VarNameTok.Value.(string), i)
+		ctx.SymTable.ForceSetSymbol(node.VarNameTok.Value.(string), i)
 		i, err = i.Add(stepValue)
 		if err != nil {
 			return res.Failure(err)
@@ -550,6 +578,32 @@ func VisitItemAccessNode(node nodes.ItemAccessNode, ctx environment.Context) *Ru
 	}
 
 	result, error := valueToAccess.GetItem(key)
+
+	if error != nil {
+		return res.Failure(error)
+	}
+	result.SetContext(ctx)
+	result.SetValuePos(node.GetPosRange())
+	return res.Success(result)
+}
+
+func VisitItemAssignNode(node nodes.ItemAssignNode, ctx environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	valueToAssignTo := res.Register(Visit(node.NodeToAssignTo, ctx))
+	if res.ShouldReturn() {
+		return res
+	}
+	key := res.Register(Visit(node.KeyNode, ctx))
+	if res.ShouldReturn() {
+		return res
+	}
+	value := res.Register(Visit(node.ValueNode, ctx))
+	if res.ShouldReturn() {
+		return res
+	}
+
+	result, error := valueToAssignTo.SetItem(key, value)
 
 	if error != nil {
 		return res.Failure(error)

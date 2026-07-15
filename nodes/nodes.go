@@ -100,7 +100,27 @@ func NewVariableAssignNode(varNameTok tokens.Token, valueNode Node) VariableAssi
 	}
 }
 func (n VariableAssignNode) String() string {
+	if n.ValueNode == nil {
+		return fmt.Sprintf("(ASSIGN %v)", n.VarNameTok)
+	}
 	return fmt.Sprintf("(ASSIGN %v = %v)", n.VarNameTok, n.ValueNode)
+}
+
+type VariableReassignNode struct {
+	BaseNode
+	VarNameTok tokens.Token
+	ValueNode  Node
+}
+
+func NewVariableReassignNode(varNameTok tokens.Token, valueNode Node) VariableReassignNode {
+	return VariableReassignNode{
+		VarNameTok: varNameTok,
+		ValueNode:  valueNode,
+		BaseNode:   BaseNode{PosRange: position.PositionRange{Start: varNameTok.PosRange.Start, End: varNameTok.PosRange.End}},
+	}
+}
+func (n VariableReassignNode) String() string {
+	return fmt.Sprintf("(REASSIGN %v = %v)", n.VarNameTok, n.ValueNode)
 }
 
 type VariableDeleteNode struct {
@@ -325,7 +345,27 @@ func NewItemAccessNode(nodeToAccess Node, keyNode Node) ItemAccessNode {
 }
 
 func (n ItemAccessNode) String() string {
-	return fmt.Sprintf("(ACCESS %v KEY %v)", n.NodeToAccess, n.KeyNode)
+	return fmt.Sprintf("(ITEM ACCESS %v KEY %v)", n.NodeToAccess, n.KeyNode)
+}
+
+type ItemAssignNode struct {
+	BaseNode
+	NodeToAssignTo Node
+	KeyNode        Node
+	ValueNode      Node
+}
+
+func NewItemAssignNode(nodeToAssignTo Node, keyNode Node, valueNode Node) ItemAssignNode {
+	return ItemAssignNode{
+		NodeToAssignTo: nodeToAssignTo,
+		KeyNode:        keyNode,
+		ValueNode:      valueNode,
+		BaseNode:       BaseNode{PosRange: position.PositionRange{Start: nodeToAssignTo.GetPosRange().Start, End: keyNode.GetPosRange().End}},
+	}
+}
+
+func (n ItemAssignNode) String() string {
+	return fmt.Sprintf("(ITEM ASSIGN %v KEY %v = %v)", n.NodeToAssignTo, n.KeyNode, n.ValueNode)
 }
 
 type ItemDeleteNode struct {

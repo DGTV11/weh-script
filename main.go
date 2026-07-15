@@ -105,7 +105,7 @@ func shell() {
 				// if reflect.TypeOf(res).String() != "*values.Null" {
 				fmt.Println(res)
 
-				globalSymbolTable.SetSymbol("_", res)
+				globalSymbolTable.ForceSetSymbol("_", res)
 			}
 			if viewExecutionTimes == true {
 				fmt.Printf("\n===========================\nlexer %v\nparser %v\ninterpreter %v\n---------------------------\ntotal %v\n===========================\n", lexerElapsed, parserElapsed, interpreterElapsed, elapsed)

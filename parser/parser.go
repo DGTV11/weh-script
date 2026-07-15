@@ -244,12 +244,13 @@ func (p *Parser) Expr() *ParseResult {
 
 		tok = *p.CurrentToken
 		if tok.Type != tokens.TokenTypeEquals {
-			return res.Failure(
-				errors.NewInvalidSyntaxError(
-					tok.PosRange.Start, tok.PosRange.End,
-					"Expected '='",
-				),
-			)
+			// return res.Failure(
+			// 	errors.NewInvalidSyntaxError(
+			// 		tok.PosRange.Start, tok.PosRange.End,
+			// 		"Expected '='",
+			// 	),
+			// )
+			return res.Success(nodes.NewVariableAssignNode(varName, nil))
 		}
 
 		res.RegisterAdvance()
@@ -260,64 +261,48 @@ func (p *Parser) Expr() *ParseResult {
 			return res
 		}
 		return res.Success(nodes.NewVariableAssignNode(varName, expr))
-	} else if tok.Matches(tokens.TokenTypeKeyword, "del") {
+	}
+
+	mutation := res.Register(p.Mutation())
+	if res.Err != nil {
+		return res
+	}
+	return res.Success(mutation)
+}
+
+func (p *Parser) Mutation() *ParseResult {
+	res := NewParseResult()
+
+	tok := *p.CurrentToken
+
+	if tok.Matches(tokens.TokenTypeKeyword, "del") {
 		res.RegisterAdvance()
 		p.Advance()
 
-		tok = *p.CurrentToken
-		if p.CurrentToken.Type != tokens.TokenTypeIdentifier {
-			return res.Failure(
-				errors.NewInvalidSyntaxError(
-					p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
-					"Expected identifier",
-				),
-			)
+		reassignableNode := res.Register(p.Reassignable())
+		if res.Err != nil {
+			return res
 		}
 
-		res.RegisterAdvance()
-		p.Advance()
-
-		if p.CurrentToken.Type != tokens.TokenTypeLsquare {
-			return res.Success(nodes.NewVariableDeleteNode(tok))
+		var delNode nodes.Node
+		switch n := reassignableNode.(type) {
+		case nodes.VariableAccessNode:
+			delNode = nodes.NewVariableDeleteNode(n.VarNameTok)
+		case nodes.ItemAccessNode:
+			delNode = nodes.NewItemDeleteNode(n.NodeToAccess, n.KeyNode)
 		}
 
-		var delNode nodes.Node = nodes.NewVariableAccessNode(tok)
-
-		for p.CurrentToken.Type == tokens.TokenTypeLsquare {
-			switch p.CurrentToken.Type {
-			case tokens.TokenTypeLsquare:
-				res.RegisterAdvance()
-				p.Advance()
-
-				key := res.Register(p.Expr())
-				if res.Err != nil {
-					return res
-				}
-
-				// res.RegisterAdvance()
-				// p.Advance()
-
-				if p.CurrentToken.Type != tokens.TokenTypeRsquare {
-					return res.Failure(
-						errors.NewInvalidSyntaxError(
-							p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
-							"Expected ']'",
-						),
-					)
-				}
-
-				res.RegisterAdvance()
-				p.Advance()
-
-				delNode = nodes.NewItemAccessNode(delNode, key)
-			}
-		}
-		delNode = nodes.NewItemDeleteNode(delNode.(nodes.ItemAccessNode).NodeToAccess, delNode.(nodes.ItemAccessNode).KeyNode)
 		// res.RegisterAdvance()
 		// p.Advance()
 
 		return res.Success(delNode)
 	}
+
+	reassignNode := res.TryRegister(p.Reassign())
+	if reassignNode != nil {
+		return res.Success(reassignNode)
+	}
+	p.Reverse(res.ToReverseCount)
 
 	// node := res.Register(p.BinOp(p.CompExpr, []tokens.TokenType{tokens.TokenTypeLAnd, tokens.TokenTypeLOr}, nil))
 	node := res.Register(p.LOrExpr())
@@ -330,6 +315,95 @@ func (p *Parser) Expr() *ParseResult {
 		)
 	}
 	return res.Success(node)
+}
+
+func (p *Parser) Reassign() *ParseResult {
+	res := NewParseResult()
+
+	reassignableNode := res.Register(p.Reassignable())
+	if res.Err != nil {
+		return res
+	}
+
+	if p.CurrentToken.Type != tokens.TokenTypeEquals {
+		return res.Failure(
+			errors.NewInvalidSyntaxError(
+				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+				"Expected '='",
+			),
+		)
+	}
+
+	res.RegisterAdvance()
+	p.Advance()
+
+	mutation := res.Register(p.Mutation())
+	if res.Err != nil {
+		return res
+	}
+
+	var reassignNode nodes.Node
+	switch n := reassignableNode.(type) {
+	case nodes.VariableAccessNode:
+		reassignNode = nodes.NewVariableReassignNode(n.VarNameTok, mutation)
+	case nodes.ItemAccessNode:
+		reassignNode = nodes.NewItemAssignNode(n.NodeToAccess, n.KeyNode, mutation)
+	}
+
+	// res.RegisterAdvance()
+	// p.Advance()
+
+	return res.Success(reassignNode)
+}
+
+func (p *Parser) Reassignable() *ParseResult {
+	res := NewParseResult()
+	tok := *p.CurrentToken
+	if p.CurrentToken.Type != tokens.TokenTypeIdentifier {
+		return res.Failure(
+			errors.NewInvalidSyntaxError(
+				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+				"Expected identifier",
+			),
+		)
+	}
+
+	res.RegisterAdvance()
+	p.Advance()
+
+	var assignableNode nodes.Node = nodes.NewVariableAccessNode(tok)
+
+	for p.CurrentToken.Type == tokens.TokenTypeLsquare {
+		switch p.CurrentToken.Type {
+		case tokens.TokenTypeLsquare:
+			res.RegisterAdvance()
+			p.Advance()
+
+			key := res.Register(p.Expr())
+			if res.Err != nil {
+				return res
+			}
+
+			// res.RegisterAdvance()
+			// p.Advance()
+
+			if p.CurrentToken.Type != tokens.TokenTypeRsquare {
+				return res.Failure(
+					errors.NewInvalidSyntaxError(
+						p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+						"Expected ']'",
+					),
+				)
+			}
+
+			res.RegisterAdvance()
+			p.Advance()
+
+			assignableNode = nodes.NewItemAccessNode(assignableNode, key)
+		}
+	}
+
+	return res.Success(assignableNode)
 }
 
 func (p *Parser) LOrExpr() *ParseResult {

@@ -6,8 +6,8 @@ func join(elements, separator)
   # print(elements)
   var l = len(elements)
   for i=0 to l then
-    var res = res + elements[i] 
-    if i!=l-1 then var res = res+separator
+    res = res + elements[i] 
+    if i!=l-1 then res = res+separator
   end
   return res
 end

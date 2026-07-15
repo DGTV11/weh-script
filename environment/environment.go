@@ -44,8 +44,24 @@ func (s SymbolTable) GetSymbol(name string) any {
 	return nil
 }
 
-func (s SymbolTable) SetSymbol(name string, val any) {
+func (s SymbolTable) ForceSetSymbol(name string, val any) {
 	s.Symbols[name] = val
+}
+
+func (s SymbolTable) SetSymbol(name string, val any) bool {
+	_, ok := s.Symbols[name]
+	if ok == false {
+		s.Symbols[name] = val
+	}
+	return !ok
+}
+
+func (s SymbolTable) UpdateSymbol(name string, val any) bool {
+	_, ok := s.Symbols[name]
+	if ok == true {
+		s.Symbols[name] = val
+	}
+	return ok
 }
 
 func (s SymbolTable) RemoveSymbol(name string) {
