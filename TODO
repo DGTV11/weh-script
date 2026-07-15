@@ -1,10 +1,6 @@
 1) finish up good goods 
   - add file I/0
   - separate String() from Repr() or smth similar in Values (e.g. and esp. to remove "" in printing of String)
-  - prevent var redeclaration (instead put a separate '=' rule alongside var assign in expr -> 
-    - make variable assign/update node
-    - make item assign/update node
-    - (or overhaul into single chain assign/update with the help of expr + call chain)
   - add type casting
   - add OOP? https://craftinginterpreters.com/the-lox-language.html#classes
     - this means u need to add get and del for member access operator `.`
