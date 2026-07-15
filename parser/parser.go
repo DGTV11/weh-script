@@ -319,7 +319,8 @@ func (p *Parser) Expr() *ParseResult {
 		return res.Success(delNode)
 	}
 
-	node := res.Register(p.BinOp(p.CompExpr, []tokens.TokenType{tokens.TokenTypeLAnd, tokens.TokenTypeLOr}, nil))
+	// node := res.Register(p.BinOp(p.CompExpr, []tokens.TokenType{tokens.TokenTypeLAnd, tokens.TokenTypeLOr}, nil))
+	node := res.Register(p.LOrExpr())
 	if res.Err != nil {
 		return res.Failure(
 			errors.NewInvalidSyntaxError(
@@ -329,6 +330,14 @@ func (p *Parser) Expr() *ParseResult {
 		)
 	}
 	return res.Success(node)
+}
+
+func (p *Parser) LOrExpr() *ParseResult {
+	return p.BinOp(p.LAndExpr, []tokens.TokenType{tokens.TokenTypeLOr}, nil)
+}
+
+func (p *Parser) LAndExpr() *ParseResult {
+	return p.BinOp(p.CompExpr, []tokens.TokenType{tokens.TokenTypeLAnd}, nil)
 }
 
 func (p *Parser) CompExpr() *ParseResult {
