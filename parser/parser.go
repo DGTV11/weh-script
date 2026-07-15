@@ -213,7 +213,7 @@ func (p *Parser) Statement() *ParseResult {
 		return res.Failure(
 			errors.NewInvalidSyntaxError(
 				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
-				"Expected 'return', 'continue', 'break', 'var', 'del', 'if', 'for', 'while', 'func', integer, float, identifier, '+', '-', '(', '[' or '!'",
+				"Expected 'return', 'continue', 'break', 'var', 'del', 'if', 'for', 'while', 'func', integer, float, identifier, '=', '+', '-', '(', '[' or '!'",
 			),
 		)
 	}
@@ -310,7 +310,7 @@ func (p *Parser) Mutation() *ParseResult {
 		return res.Failure(
 			errors.NewInvalidSyntaxError(
 				tok.PosRange.Start, tok.PosRange.End,
-				"Expected 'var', 'del', 'if', 'for', 'while', 'func', integer, float, identifier, '+', '-', '(', '[' or '!'",
+				"Expected 'var', 'del', 'if', 'for', 'while', 'func', integer, float, identifier, '=', '+', '-', '(', '[' or '!'",
 			),
 		)
 	}
@@ -494,7 +494,7 @@ func (p *Parser) Call() *ParseResult {
 					return res.Failure(
 						errors.NewInvalidSyntaxError(
 							p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
-							"Expected ')', 'var', 'del', 'if', 'for', 'while', 'func', integer, float, identifier, '+', '-', '(', '[' or '!'",
+							"Expected ')', 'var', 'del', 'if', 'for', 'while', 'func', integer, float, identifier, '=', '+', '-', '(', '[' or '!'",
 						),
 					)
 				}
@@ -651,7 +651,7 @@ func (p *Parser) ListExpr() *ParseResult {
 			return res.Failure(
 				errors.NewInvalidSyntaxError(
 					p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
-					"Expected ']', 'var', 'del', 'if', 'for', 'while', 'func', integer, float, identifier, '+', '-', '(', '[' or '!'",
+					"Expected ']', 'var', 'del', 'if', 'for', 'while', 'func', integer, float, identifier, '=', '+', '-', '(', '[' or '!'",
 				),
 			)
 		}
