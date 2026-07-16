@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -933,5 +934,37 @@ func (self *BuiltInFunction) String() string {
 	return fmt.Sprintf("<built-in function %s>", self.DisplayName())
 }
 func (self *BuiltInFunction) GoString() string {
+	return self.String()
+}
+
+// *File
+type File struct {
+	BaseValue
+	FileValue *os.File
+	ModeStr   string
+}
+
+func (self *File) Length() (BaseValueInterface, *errors.Error) {
+	fInfo, sErr := self.FileValue.Stat()
+	if sErr != nil {
+		posRange := self.GetPosRange()
+		return nil, errors.NewRuntimeError(posRange.Start, posRange.End, sErr.Error(), self.GetContext())
+	}
+	res := &Integer{Value: fInfo.Size()}
+	return res, nil
+}
+func (self *File) Copy() BaseValueInterface {
+	copy := &File{FileValue: self.FileValue, ModeStr: self.ModeStr}
+	copy.SetValuePos(self.GetPosRange())
+	copy.SetContext(self.GetContext())
+	return copy
+}
+func (self *File) IsTrue() bool {
+	return true
+}
+func (self *File) String() string {
+	return fmt.Sprintf("<file path=%s mode=%s>", strconv.Quote(self.FileValue.Name()), strconv.Quote(self.ModeStr))
+}
+func (self *File) GoString() string {
 	return self.String()
 }

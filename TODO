@@ -1,9 +1,9 @@
 1) finish up good goods 
-  - add file I/0
   - add type casting
   - add OOP? https://craftinginterpreters.com/the-lox-language.html#classes
     - this means u need to add get and del for member access operator `.`
-  - add import statements into "immutable objects" (?!? if u do this for compatibility u need to make stdlib IN `.weh` files!)
+  - add directory I/O
+  - add import statements into "immutable objects" (?!? if u do this for compatibility u need to make stdlib IN `.weh` files or find some way to make go plugin func return!)
   - add AST optimiser?
   - saner go CLI!
   - explain syntax/CLI in TODO or smth

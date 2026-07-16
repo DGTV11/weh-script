@@ -730,6 +730,38 @@ var BuiltInFunctionTable = map[string]BuiltInFunctionData{
 		FunctionRef: ExecuteExit,
 		Args:        []string{"code"},
 	},
+	"fopen": {
+		FunctionRef: ExecuteFileOpen,
+		Args:        []string{"path", "mode"},
+	},
+	"fclose": {
+		FunctionRef: ExecuteFileClose,
+		Args:        []string{"file"},
+	},
+	"fseek": {
+		FunctionRef: ExecuteFileSeek,
+		Args:        []string{"file", "offset", "whence"},
+	},
+	"fread": {
+		FunctionRef: ExecuteFileRead,
+		Args:        []string{"file", "size"},
+	},
+	"fwrite": {
+		FunctionRef: ExecuteFileWrite,
+		Args:        []string{"file", "text"},
+	},
+	"ftruncate": {
+		FunctionRef: ExecuteFileTruncate,
+		Args:        []string{"file", "size"},
+	},
+	"fcreate": {
+		FunctionRef: ExecuteFileCreate,
+		Args:        []string{"path"},
+	},
+	"fcreate_temp": {
+		FunctionRef: ExecuteFileCreateTemp,
+		Args:        []string{"dir", "pattern"},
+	},
 }
 
 func ExecutePrint(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
@@ -845,6 +877,245 @@ func ExecuteExit(callable values.BaseFunctionInterface, execCtx environment.Cont
 	os.Exit(int(code.Value))
 
 	return res.Success(&values.Null{}) // won't matter anyways
+}
+
+func ExecuteFileOpen(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	pathValue := execCtx.SymTable.GetSymbol("path").(values.BaseValueInterface)
+	path, ok := pathValue.(*values.String)
+	if ok == false {
+		posRange := pathValue.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "First argument must be String", execCtx))
+	}
+	modeValue := execCtx.SymTable.GetSymbol("mode").(values.BaseValueInterface)
+	mode, ok := modeValue.(*values.String)
+	if ok == false {
+		posRange := modeValue.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "Second argument must be String", execCtx))
+	}
+
+	var modeInt int
+	switch mode.Value {
+	case "r":
+		modeInt = os.O_RDONLY
+	case "w":
+		modeInt = os.O_WRONLY | os.O_CREATE
+	case "a":
+		modeInt = os.O_WRONLY | os.O_APPEND | os.O_CREATE
+	case "r+":
+		modeInt = os.O_RDWR
+	case "w+":
+		modeInt = os.O_RDWR | os.O_CREATE
+	case "a+":
+		modeInt = os.O_RDWR | os.O_APPEND | os.O_CREATE
+	default:
+		posRange := modeValue.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "Invalid open mode", execCtx))
+	}
+	f, err := os.OpenFile(path.Value, modeInt, 0644)
+	if err != nil {
+		posRange := callable.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, err.Error(), execCtx))
+	}
+	if f == nil {
+		posRange := callable.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "Unknown error in opening file", execCtx))
+	}
+
+	if mode.Value[0] == 'w' {
+		tErr := f.Truncate(0)
+		if tErr != nil {
+			posRange := callable.GetPosRange()
+			return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, tErr.Error(), execCtx))
+		}
+	}
+
+	return res.Success(&values.File{FileValue: f, ModeStr: mode.Value})
+}
+
+func ExecuteFileClose(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	fileValue := execCtx.SymTable.GetSymbol("file").(values.BaseValueInterface)
+	file, ok := fileValue.(*values.File)
+	if ok == false {
+		posRange := fileValue.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "First argument must be File", execCtx))
+	}
+	err := file.FileValue.Close()
+	if err != nil {
+		posRange := fileValue.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, err.Error(), execCtx))
+	}
+	return res.Success(&values.Null{})
+}
+
+func ExecuteFileSeek(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	fileValue := execCtx.SymTable.GetSymbol("file").(values.BaseValueInterface)
+	file, ok := fileValue.(*values.File)
+	if ok == false {
+		posRange := fileValue.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "First argument must be File", execCtx))
+	}
+	offsetValue := execCtx.SymTable.GetSymbol("offset").(values.BaseValueInterface)
+	offset, ok := offsetValue.(*values.Integer)
+	if ok == false {
+		posRange := offsetValue.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "Second argument must be Integer", execCtx))
+	}
+	whenceValue := execCtx.SymTable.GetSymbol("whence").(values.BaseValueInterface)
+	whence, ok := whenceValue.(*values.Integer)
+	if ok == false {
+		posRange := whenceValue.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "Third argument must be Integer", execCtx))
+	}
+
+	newOffset, err := file.FileValue.Seek(offset.Value, int(whence.Value))
+	if err != nil {
+		posRange := callable.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, err.Error(), execCtx))
+	}
+	return res.Success(&values.Integer{Value: int64(newOffset)})
+}
+
+func ExecuteFileRead(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	fileValue := execCtx.SymTable.GetSymbol("file").(values.BaseValueInterface)
+	file, ok := fileValue.(*values.File)
+	if ok == false {
+		posRange := fileValue.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "First argument must be File", execCtx))
+	}
+	sizeValue := execCtx.SymTable.GetSymbol("size").(values.BaseValueInterface)
+	size, ok := sizeValue.(*values.Integer)
+	if ok == false {
+		posRange := sizeValue.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "Second argument must be Integer", execCtx))
+	}
+
+	var sizeInt int64
+	if size.Value < 0 {
+		lenValue, lErr := file.Length()
+		if lErr != nil {
+			return res.Failure(lErr)
+		}
+		sizeInt = lenValue.(*values.Integer).Value
+	} else {
+		sizeInt = size.Value
+	}
+
+	readBuf := make([]byte, sizeInt)
+
+	noBytesRead, err := file.FileValue.Read(readBuf)
+	if err != nil {
+		posRange := callable.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, err.Error(), execCtx))
+	}
+	return res.Success(&values.String{Value: string(readBuf[:noBytesRead])})
+}
+
+func ExecuteFileWrite(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	fileValue := execCtx.SymTable.GetSymbol("file").(values.BaseValueInterface)
+	file, ok := fileValue.(*values.File)
+	if ok == false {
+		posRange := fileValue.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "First argument must be File", execCtx))
+	}
+	textValue := execCtx.SymTable.GetSymbol("text").(values.BaseValueInterface)
+	text, ok := textValue.(*values.String)
+	if ok == false {
+		posRange := textValue.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "Second argument must be String", execCtx))
+	}
+
+	noBytesWritten, err := file.FileValue.WriteString(text.Value)
+	if err != nil {
+		posRange := callable.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, err.Error(), execCtx))
+	}
+	return res.Success(&values.Integer{Value: int64(noBytesWritten)})
+}
+
+func ExecuteFileTruncate(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	fileValue := execCtx.SymTable.GetSymbol("file").(values.BaseValueInterface)
+	file, ok := fileValue.(*values.File)
+	if ok == false {
+		posRange := fileValue.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "First argument must be File", execCtx))
+	}
+	sizeValue := execCtx.SymTable.GetSymbol("size").(values.BaseValueInterface)
+	size, ok := sizeValue.(*values.Integer)
+	if ok == false {
+		posRange := sizeValue.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "Second argument must be Integer", execCtx))
+	}
+
+	err := file.FileValue.Truncate(size.Value)
+	if err != nil {
+		posRange := callable.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, err.Error(), execCtx))
+	}
+	return res.Success(&values.Integer{Value: size.Value})
+}
+
+func ExecuteFileCreate(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	pathValue := execCtx.SymTable.GetSymbol("path").(values.BaseValueInterface)
+	path, ok := pathValue.(*values.String)
+	if ok == false {
+		posRange := pathValue.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "First argument must be String", execCtx))
+	}
+
+	f, err := os.Create(path.Value)
+	if err != nil {
+		posRange := callable.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, err.Error(), execCtx))
+	}
+	if f == nil {
+		posRange := callable.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "Unknown error in creating file", execCtx))
+	}
+
+	return res.Success(&values.File{FileValue: f, ModeStr: "r+"})
+}
+
+func ExecuteFileCreateTemp(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	dirValue := execCtx.SymTable.GetSymbol("dir").(values.BaseValueInterface)
+	dir, ok := dirValue.(*values.String)
+	if ok == false {
+		posRange := dirValue.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "First argument must be String", execCtx))
+	}
+	patternValue := execCtx.SymTable.GetSymbol("pattern").(values.BaseValueInterface)
+	pattern, ok := patternValue.(*values.String)
+	if ok == false {
+		posRange := patternValue.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "Second argument must be String", execCtx))
+	}
+
+	f, err := os.CreateTemp(dir.Value, pattern.Value)
+	if err != nil {
+		posRange := callable.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, err.Error(), execCtx))
+	}
+	if f == nil {
+		posRange := callable.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "Unknown error in creating file", execCtx))
+	}
+
+	return res.Success(&values.File{FileValue: f, ModeStr: "r+"})
 }
 
 // *Function Calls
