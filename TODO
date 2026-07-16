@@ -1,5 +1,6 @@
 1) finish up good goods 
   - add type casting
+  - add hex int literal in lexer
   - add OOP? https://craftinginterpreters.com/the-lox-language.html#classes
     - this means u need to add get and del for member access operator `.`
   - add directory I/O
