@@ -9,6 +9,7 @@ func fib(n)
     a=b
     b=c
   end
+  return a
 end
 
 print(fib(10**7))
