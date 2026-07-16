@@ -103,7 +103,8 @@ func shell() {
 				// } else if reflect.TypeOf(res).String() != "*values.Null" {
 			} else if _, ok := res.(*values.Null); ok == false {
 				// if reflect.TypeOf(res).String() != "*values.Null" {
-				fmt.Println(res)
+				// fmt.Println(res)
+				fmt.Printf("%#v\n", res)
 
 				globalSymbolTable.ForceSetSymbol("_", res)
 			}

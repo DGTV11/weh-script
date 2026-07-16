@@ -77,6 +77,7 @@ type BaseValueInterface interface {
 	IsTrue() bool
 	IllegalOperation(other BaseValueInterface) *errors.Error
 	String() string
+	GoString() string
 }
 
 type BaseValue struct {
@@ -195,6 +196,9 @@ func (self *Null) IsTrue() bool {
 }
 func (self *Null) String() string {
 	return "null"
+}
+func (self *Null) GoString() string {
+	return self.String()
 }
 
 // *Integer
@@ -400,6 +404,9 @@ func (self *Integer) IsTrue() bool {
 func (self *Integer) String() string {
 	return strconv.FormatInt(self.Value, 10)
 }
+func (self *Integer) GoString() string {
+	return self.String()
+}
 
 // *Float
 type Float struct {
@@ -592,6 +599,9 @@ func (self *Float) IsTrue() bool {
 func (self *Float) String() string {
 	return strconv.FormatFloat(self.Value, 'g', -1, 64)
 }
+func (self *Float) GoString() string {
+	return self.String()
+}
 
 // *String
 type String struct {
@@ -672,7 +682,10 @@ func (self *String) IsTrue() bool {
 	return len(self.Value) > 0
 }
 func (self *String) String() string {
-	return strconv.Quote(self.Value)
+	return self.Value
+}
+func (self *String) GoString() string {
+	return strconv.Quote(self.String())
 }
 
 // *List
@@ -833,6 +846,9 @@ func (self *List) String() string {
 	sb.Append("]")
 	return sb.String()
 }
+func (self *List) GoString() string {
+	return self.String()
+}
 
 // *BaseFunction
 type BaseFunctionInterface interface {
@@ -886,6 +902,9 @@ func (self *Function) Copy() BaseValueInterface {
 func (self *Function) String() string {
 	return fmt.Sprintf("<function %s>", self.DisplayName())
 }
+func (self *Function) GoString() string {
+	return self.String()
+}
 
 // *BuiltInFunction
 type BuiltInFunction struct {
@@ -912,4 +931,7 @@ func (self *BuiltInFunction) Copy() BaseValueInterface {
 }
 func (self *BuiltInFunction) String() string {
 	return fmt.Sprintf("<built-in function %s>", self.DisplayName())
+}
+func (self *BuiltInFunction) GoString() string {
+	return self.String()
 }
