@@ -4,8 +4,7 @@
     - this means u need to add get and del for member access operator `.`
   - add directory I/O
   - add import statements into "immutable objects" (?!? if u do this for compatibility u need to make stdlib IN `.weh` files or find some way to make go plugin func return!)
-  - add AST optimiser?
-  - saner go CLI!
+  - add AST optimiser (or just wait until bytecode compiler)?
   - explain syntax/CLI in TODO or smth
 2) make bytecode compiler + reg-based VM (give option to choose between AST tree-walk interpreter and bytecode interpreter, especially when running .weh script)
   - maybe (PLT-inspired) trap style stdlib?

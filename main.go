@@ -1,8 +1,8 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -11,6 +11,7 @@ import (
 	"unsafe"
 	// "reflect"
 
+	"github.com/PLWagner/golang-liner"
 	"github.com/spf13/pflag"
 
 	"github.com/DGTV11/weh-script/environment"
@@ -73,28 +74,36 @@ var parserElapsed time.Duration
 var interpreterElapsed time.Duration
 var elapsed time.Duration
 
+const historyFn = "/tmp/.wehshell_history" //TODO: make platform indep?
+
 func shell() {
+	line := liner.NewLiner()
+	defer line.Close()
+	if f, err := os.Open(historyFn); err == nil {
+		line.ReadHistory(f)
+		f.Close()
+	} //thank u liner readme
+
 	fmt.Println("WehScript Programming Language")
+
 	if bytecodeMode == true {
 		log.Fatal("Bytecode VM not implemented")
 	} else {
 		globalSymbolTable := interpreter.SetupGlobalSymbolTable()
 
 		for {
-			fmt.Print("wehscript > ")
-			// fmt.Scanf("%[^\n]", &text)
-
-			scanner := bufio.NewScanner(os.Stdin)
-			scanner.Scan()
-			serr := scanner.Err()
-			if serr != nil {
-				fmt.Println(serr)
+			text, lErr := line.Prompt("wehscript > ")
+			if lErr != nil {
+				if lErr == io.EOF {
+					break
+				}
+				log.Print("Error reading line: ", lErr)
+				continue
 			}
-
-			text := scanner.Text()
 			if strings.TrimSpace(text) == "" {
 				continue
 			}
+			line.AppendHistory(text)
 
 			res, err := Run("<stdin>", text, globalSymbolTable)
 
@@ -112,6 +121,13 @@ func shell() {
 				fmt.Printf("\n===========================\nlexer %v\nparser %v\ninterpreter %v\n---------------------------\ntotal %v\n===========================\n", lexerElapsed, parserElapsed, interpreterElapsed, elapsed)
 			}
 		}
+	}
+
+	if f, err := os.Create(historyFn); err != nil {
+		log.Print("Error writing history file: ", err)
+	} else {
+		line.WriteHistory(f)
+		f.Close()
 	}
 }
 
