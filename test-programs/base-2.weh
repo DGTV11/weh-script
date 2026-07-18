@@ -1,0 +1,12 @@
+# closures test
+
+func outer(x) 
+  func inner(y)
+    return x+y
+  end
+  return inner
+end #TODO: implement closures
+
+var closure = outer(10)
+print(closure(5))
+print(closure(20))
