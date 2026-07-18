@@ -534,7 +534,11 @@ func VisitFuncDefNode(node nodes.FuncDefNode, ctx *environment.Context) *Runtime
 	funcValue.SetValuePos(node.GetPosRange())
 
 	if funcName != nil {
-		ctx.SymTable.SetSymbol(*funcName, funcValue)
+		stRes := ctx.SymTable.SetSymbol(*funcName, funcValue)
+		if stRes == false {
+			posRange := node.GetPosRange()
+			return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, fmt.Sprintf("'%s' is already defined", *funcName), ctx))
+		}
 	}
 	// fmt.Println(funcValue.Closure)
 	return res.Success(funcValue)
