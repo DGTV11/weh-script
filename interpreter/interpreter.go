@@ -719,6 +719,10 @@ var BuiltInFunctionTable = map[string]BuiltInFunctionData{
 		FunctionRef: ExecuteTypeOf,
 		Args:        []string{"value"},
 	},
+	"repr": {
+		FunctionRef: ExecuteRepr,
+		Args:        []string{"value"},
+	},
 	"len": {
 		FunctionRef: ExecuteLen,
 		Args:        []string{"list"},
@@ -817,6 +821,11 @@ func ExecuteClear(callable values.BaseFunctionInterface, execCtx *environment.Co
 func ExecuteTypeOf(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult {
 	value := execCtx.SymTable.GetSymbol("value")
 	return NewRuntimeResult().Success(&values.String{Value: reflect.TypeOf(value).Elem().Name()})
+}
+
+func ExecuteRepr(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult {
+	value := execCtx.SymTable.GetSymbol("value")
+	return NewRuntimeResult().Success(&values.String{Value: value.(values.BaseValueInterface).GoString()})
 }
 
 func ExecuteLen(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult {
