@@ -7,13 +7,11 @@ statement     : Keyword:return expr?
               : expr
               
 expr          : Keyword:var Identifier (Equals expr)?
-              : mutation
-              
-mutation      : Keyword:del reassignable
+              : Keyword:del reassignable
               : reassign
               : lor-expr
 
-reassign      : reassignable Equals mutation
+reassign      : reassignable Equals expr
               
 reassignable  : Identifier (Lsquare expr Rsquare)*
               

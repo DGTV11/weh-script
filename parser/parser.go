@@ -261,21 +261,7 @@ func (p *Parser) Expr() *ParseResult {
 			return res
 		}
 		return res.Success(nodes.NewVariableAssignNode(varName, expr))
-	}
-
-	mutation := res.Register(p.Mutation())
-	if res.Err != nil {
-		return res
-	}
-	return res.Success(mutation)
-}
-
-func (p *Parser) Mutation() *ParseResult {
-	res := NewParseResult()
-
-	tok := *p.CurrentToken
-
-	if tok.Matches(tokens.TokenTypeKeyword, "del") {
+	} else if tok.Matches(tokens.TokenTypeKeyword, "del") {
 		res.RegisterAdvance()
 		p.Advance()
 
@@ -337,7 +323,7 @@ func (p *Parser) Reassign() *ParseResult {
 	res.RegisterAdvance()
 	p.Advance()
 
-	mutation := res.Register(p.Mutation())
+	expr := res.Register(p.Expr())
 	if res.Err != nil {
 		return res
 	}
@@ -345,9 +331,9 @@ func (p *Parser) Reassign() *ParseResult {
 	var reassignNode nodes.Node
 	switch n := reassignableNode.(type) {
 	case nodes.VariableAccessNode:
-		reassignNode = nodes.NewVariableReassignNode(n.VarNameTok, mutation)
+		reassignNode = nodes.NewVariableReassignNode(n.VarNameTok, expr)
 	case nodes.ItemAccessNode:
-		reassignNode = nodes.NewItemAssignNode(n.NodeToAccess, n.KeyNode, mutation)
+		reassignNode = nodes.NewItemAssignNode(n.NodeToAccess, n.KeyNode, expr)
 	}
 
 	// res.RegisterAdvance()
