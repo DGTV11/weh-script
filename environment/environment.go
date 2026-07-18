@@ -56,7 +56,17 @@ func (s SymbolTable) SetSymbol(name string, val any) bool {
 	return !ok
 }
 
-func (s SymbolTable) UpdateSymbol(name string, val any) bool {
+func (s SymbolTable) UpdateSymbol(name string, val any, nonlocal bool) bool {
+	if nonlocal == true {
+		if s.Parent == nil {
+			return false
+		}
+		_, ok := s.Parent.Symbols[name]
+		if ok == true {
+			s.Parent.Symbols[name] = val
+		}
+		return ok
+	}
 	_, ok := s.Symbols[name]
 	if ok == true {
 		s.Symbols[name] = val

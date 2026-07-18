@@ -5,8 +5,26 @@ func outer(x)
     return x+y
   end
   return inner
-end #TODO: implement closures
+end 
 
-var closure = outer(10)
-print(closure(5))
-print(closure(20))
+var x=10
+var closure = outer(x)
+print(x)
+print(" + 5 = ")
+println(closure(5))
+print(x)
+print(" + 5 = ")
+println(closure(20))
+
+func count(initial)
+  var x=initial
+  func inc()
+    return nonlocal x=x+1
+  end
+  return inc
+end
+
+var closure2=count(100)
+println(closure2())
+println(closure2())
+println(closure2())

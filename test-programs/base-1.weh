@@ -21,10 +21,10 @@ func map(elements, f)
   return new_elements
 end
 
-print("Hello world!")
+print("Hello world!\n")
 
 for i=0 to 5 then
-  print(join(map(["l", "sp"], oopify), ", "))
+  println(join(map(["l", "sp"], oopify), ", "))
   # print(oopify("l"))
   # print(oopify("sp"))
 end

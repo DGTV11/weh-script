@@ -261,6 +261,43 @@ func (p *Parser) Expr() *ParseResult {
 			return res
 		}
 		return res.Success(nodes.NewVariableAssignNode(varName, expr))
+	} else if tok.Matches(tokens.TokenTypeKeyword, "nonlocal") {
+		res.RegisterAdvance()
+		p.Advance()
+
+		tok = *p.CurrentToken
+		if tok.Type != tokens.TokenTypeIdentifier {
+			return res.Failure(
+				errors.NewInvalidSyntaxError(
+					tok.PosRange.Start, tok.PosRange.End,
+					"Expected identifier",
+				),
+			)
+		}
+
+		varName := tok
+		res.RegisterAdvance()
+		p.Advance()
+
+		tok = *p.CurrentToken
+		if tok.Type != tokens.TokenTypeEquals {
+			return res.Failure(
+				errors.NewInvalidSyntaxError(
+					tok.PosRange.Start, tok.PosRange.End,
+					"Expected '='",
+				),
+			)
+			// return res.Success(nodes.NewVariableUpdateNode(varName, nil))
+		}
+
+		res.RegisterAdvance()
+		p.Advance()
+
+		expr := res.Register(p.Expr())
+		if res.Err != nil {
+			return res
+		}
+		return res.Success(nodes.NewVariableReassignNode(varName, expr, true))
 	} else if tok.Matches(tokens.TokenTypeKeyword, "del") {
 		res.RegisterAdvance()
 		p.Advance()
@@ -331,7 +368,7 @@ func (p *Parser) Reassign() *ParseResult {
 	var reassignNode nodes.Node
 	switch n := reassignableNode.(type) {
 	case nodes.VariableAccessNode:
-		reassignNode = nodes.NewVariableReassignNode(n.VarNameTok, expr)
+		reassignNode = nodes.NewVariableReassignNode(n.VarNameTok, expr, false)
 	case nodes.ItemAccessNode:
 		reassignNode = nodes.NewItemAssignNode(n.NodeToAccess, n.KeyNode, expr)
 	}

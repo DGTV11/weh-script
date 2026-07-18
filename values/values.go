@@ -860,7 +860,8 @@ type BaseFunctionInterface interface {
 
 type BaseFunction struct {
 	BaseValue
-	Name *string
+	Name    *string
+	Closure *environment.SymbolTable
 }
 
 func (self *BaseFunction) DisplayName() string {
@@ -871,7 +872,7 @@ func (self *BaseFunction) DisplayName() string {
 }
 func (self *BaseFunction) GenerateNewContext() *environment.Context {
 	parentCtx := self.GetContext()
-	return &environment.Context{DisplayName: self.DisplayName(), Parent: parentCtx, ParentEntryPos: self.GetPosRange().Start, SymTable: &environment.SymbolTable{Symbols: map[string]any{}, Parent: parentCtx.SymTable}}
+	return &environment.Context{DisplayName: self.DisplayName(), Parent: parentCtx, ParentEntryPos: self.GetPosRange().Start, SymTable: &environment.SymbolTable{Symbols: map[string]any{}, Parent: self.Closure}}
 }
 
 // *Function
@@ -895,7 +896,7 @@ func (self *Function) LNot() (BaseValueInterface, *errors.Error) {
 	return res, nil
 }
 func (self *Function) Copy() BaseValueInterface {
-	copy := &Function{BodyNode: self.BodyNode, ArgNames: self.ArgNames, ShouldAutoReturn: self.ShouldAutoReturn, BaseFunction: BaseFunction{Name: self.Name}}
+	copy := &Function{BodyNode: self.BodyNode, ArgNames: self.ArgNames, ShouldAutoReturn: self.ShouldAutoReturn, BaseFunction: BaseFunction{Name: self.Name, Closure: self.Closure}}
 	copy.SetValuePos(self.GetPosRange())
 	copy.SetContext(self.GetContext())
 	return copy
@@ -925,7 +926,7 @@ func (self *BuiltInFunction) LNot() (BaseValueInterface, *errors.Error) {
 	return res, nil
 }
 func (self *BuiltInFunction) Copy() BaseValueInterface {
-	copy := &BuiltInFunction{BaseFunction: BaseFunction{Name: self.Name}}
+	copy := &BuiltInFunction{BaseFunction: BaseFunction{Name: self.Name, Closure: self.Closure}}
 	copy.SetValuePos(self.GetPosRange())
 	copy.SetContext(self.GetContext())
 	return copy

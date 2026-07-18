@@ -78,6 +78,7 @@ var TokenTypeNameMap = [...]string{
 
 var Keywords = []string{
 	"var",
+	"nonlocal",
 	"del",
 	"if",
 	"elif",

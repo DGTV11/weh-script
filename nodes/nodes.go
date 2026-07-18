@@ -110,12 +110,14 @@ type VariableReassignNode struct {
 	BaseNode
 	VarNameTok tokens.Token
 	ValueNode  Node
+	Nonlocal   bool
 }
 
-func NewVariableReassignNode(varNameTok tokens.Token, valueNode Node) VariableReassignNode {
+func NewVariableReassignNode(varNameTok tokens.Token, valueNode Node, nonlocal bool) VariableReassignNode {
 	return VariableReassignNode{
 		VarNameTok: varNameTok,
 		ValueNode:  valueNode,
+		Nonlocal:   nonlocal,
 		BaseNode:   BaseNode{PosRange: position.PositionRange{Start: varNameTok.PosRange.Start, End: varNameTok.PosRange.End}},
 	}
 }

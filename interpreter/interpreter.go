@@ -259,7 +259,7 @@ func VisitVariableReassignNode(node nodes.VariableReassignNode, ctx *environment
 		return res
 	}
 
-	stRes := ctx.SymTable.UpdateSymbol(varName, value)
+	stRes := ctx.SymTable.UpdateSymbol(varName, value, node.Nonlocal)
 	if stRes == false {
 		posRange := node.GetPosRange()
 		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, fmt.Sprintf("'%s' is not defined", varName), ctx))
@@ -529,13 +529,14 @@ func VisitFuncDefNode(node nodes.FuncDefNode, ctx *environment.Context) *Runtime
 		argNames = append(argNames, node.ArgNameToks[i].Value.(string))
 	}
 	// funcValue := values.NewFunction(funcName, bodyNode, argNames)
-	funcValue := &values.Function{BodyNode: bodyNode, ArgNames: argNames, ShouldAutoReturn: node.ShouldAutoReturn, BaseFunction: values.BaseFunction{Name: funcName}}
+	funcValue := &values.Function{BodyNode: bodyNode, ArgNames: argNames, ShouldAutoReturn: node.ShouldAutoReturn, BaseFunction: values.BaseFunction{Name: funcName, Closure: ctx.SymTable}}
 	funcValue.SetContext(ctx)
 	funcValue.SetValuePos(node.GetPosRange())
 
 	if funcName != nil {
 		ctx.SymTable.SetSymbol(*funcName, funcValue)
 	}
+	// fmt.Println(funcValue.Closure)
 	return res.Success(funcValue)
 }
 
@@ -698,6 +699,14 @@ var BuiltInFunctionTable = map[string]BuiltInFunctionData{
 		FunctionRef: ExecutePrint,
 		Args:        []string{"value"},
 	},
+	"println": {
+		FunctionRef: ExecutePrintln,
+		Args:        []string{"value"},
+	},
+	// "printf": {
+	// 	FunctionRef: ExecutePrintf,
+	// 	Args:        []string{"format", "args"},
+	// },
 	"input": {
 		FunctionRef: ExecuteInput,
 		Args:        []string{},
@@ -765,9 +774,33 @@ var BuiltInFunctionTable = map[string]BuiltInFunctionData{
 }
 
 func ExecutePrint(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult {
+	fmt.Print(execCtx.SymTable.GetSymbol("value"))
+	return NewRuntimeResult().Success(&values.Null{})
+}
+
+func ExecutePrintln(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult {
 	fmt.Println(execCtx.SymTable.GetSymbol("value"))
 	return NewRuntimeResult().Success(&values.Null{})
 }
+
+// func ExecutePrintf(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult {
+// 	res := NewRuntimeResult()
+//
+// 	formatValue := execCtx.SymTable.GetSymbol("format").(values.BaseValueInterface)
+// 	format, ok := formatValue.(*values.String)
+// 	if ok == false {
+// 		posRange := formatValue.GetPosRange()
+// 		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "First argument must be String", execCtx))
+// 	}
+// 	argsValue := execCtx.SymTable.GetSymbol("args").(values.BaseValueInterface)
+// 	args, ok := argsValue.(*values.List)
+// 	if ok == false {
+// 		posRange := argsValue.GetPosRange()
+// 		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "Second argument must be List", execCtx))
+// 	}
+// 	fmt.Printf(format.Value, args.Elements...)
+// 	return NewRuntimeResult().Success(&values.Null{})
+// } //TODO: make 'native' printf
 
 func ExecuteInput(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult {
 	var input string

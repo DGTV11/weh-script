@@ -12,4 +12,4 @@ func fib(n)
   return a
 end
 
-print(fib(10**7))
+println(fib(10**7))
