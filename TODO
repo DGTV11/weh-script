@@ -1,7 +1,6 @@
 1) finish up good goods 
   - add hex int literal in lexer
   - add type casting
-  - implement closures
 	- add structs (efficiently packed data like real structs?)
   - add OOP? https://craftinginterpreters.com/the-lox-language.html#classes
     - this means u need to add get and del for member access operator `.`
