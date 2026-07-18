@@ -74,7 +74,7 @@ var parserElapsed time.Duration
 var interpreterElapsed time.Duration
 var elapsed time.Duration
 
-const historyFn = "/tmp/.wehshell_history" //TODO: make platform indep?
+var historyFn = filepath.Join(os.TempDir(), ".wehshell_history")
 
 func shell() {
 	line := liner.NewLiner()
