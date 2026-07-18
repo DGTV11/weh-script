@@ -51,8 +51,8 @@ func Bool2int64(b bool) int64 {
 type BaseValueInterface interface {
 	GetPosRange() position.PositionRange
 	SetValuePos(position.PositionRange)
-	GetContext() environment.Context
-	SetContext(ctx environment.Context)
+	GetContext() *environment.Context
+	SetContext(ctx *environment.Context)
 	Add(other BaseValueInterface) (BaseValueInterface, *errors.Error)
 	Sub(other BaseValueInterface) (BaseValueInterface, *errors.Error)
 	Mul(other BaseValueInterface) (BaseValueInterface, *errors.Error)
@@ -83,7 +83,7 @@ type BaseValueInterface interface {
 
 type BaseValue struct {
 	PosRange position.PositionRange
-	Ctx      environment.Context
+	Ctx      *environment.Context
 }
 
 func (bv *BaseValue) GetPosRange() position.PositionRange {
@@ -93,10 +93,10 @@ func (bv *BaseValue) SetValuePos(posRange position.PositionRange) {
 	bv.PosRange = posRange
 }
 
-func (bv *BaseValue) GetContext() environment.Context {
+func (bv *BaseValue) GetContext() *environment.Context {
 	return bv.Ctx
 }
-func (bv *BaseValue) SetContext(ctx environment.Context) {
+func (bv *BaseValue) SetContext(ctx *environment.Context) {
 	bv.Ctx = ctx
 }
 
@@ -855,7 +855,7 @@ func (self *List) GoString() string {
 type BaseFunctionInterface interface {
 	BaseValueInterface
 	DisplayName() string
-	GenerateNewContext() environment.Context
+	GenerateNewContext() *environment.Context
 }
 
 type BaseFunction struct {
@@ -869,9 +869,9 @@ func (self *BaseFunction) DisplayName() string {
 	}
 	return *self.Name
 }
-func (self *BaseFunction) GenerateNewContext() environment.Context {
+func (self *BaseFunction) GenerateNewContext() *environment.Context {
 	parentCtx := self.GetContext()
-	return environment.Context{DisplayName: self.DisplayName(), Parent: &parentCtx, ParentEntryPos: self.GetPosRange().Start, SymTable: &environment.SymbolTable{Symbols: map[string]any{}, Parent: parentCtx.SymTable}}
+	return &environment.Context{DisplayName: self.DisplayName(), Parent: parentCtx, ParentEntryPos: self.GetPosRange().Start, SymTable: &environment.SymbolTable{Symbols: map[string]any{}, Parent: parentCtx.SymTable}}
 }
 
 // *Function

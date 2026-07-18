@@ -54,7 +54,7 @@ func Run(fileName string, text string, globalSymbolTable *environment.SymbolTabl
 	if viewExecutionTimes == true {
 		tmpTime = time.Now()
 	}
-	context := environment.Context{DisplayName: "<program>", SymTable: globalSymbolTable}
+	context := &environment.Context{DisplayName: "<program>", SymTable: globalSymbolTable}
 	result := interpreter.Visit(ast.Node, context)
 	if viewExecutionTimes == true {
 		interpreterElapsed = time.Now().Sub(tmpTime)

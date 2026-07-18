@@ -99,7 +99,7 @@ func (rr *RuntimeResult) ShouldReturn() bool {
 }
 
 // *Main Interpreter
-func Visit(node nodes.Node, ctx environment.Context) *RuntimeResult {
+func Visit(node nodes.Node, ctx *environment.Context) *RuntimeResult {
 	switch n := node.(type) {
 	case nodes.NumberNode:
 		return VisitNumberNode(node.(nodes.NumberNode), ctx)
@@ -151,7 +151,7 @@ func Visit(node nodes.Node, ctx environment.Context) *RuntimeResult {
 	}
 }
 
-func VisitNumberNode(node nodes.NumberNode, ctx environment.Context) *RuntimeResult {
+func VisitNumberNode(node nodes.NumberNode, ctx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 	var number values.BaseValueInterface = nil
 
@@ -169,7 +169,7 @@ func VisitNumberNode(node nodes.NumberNode, ctx environment.Context) *RuntimeRes
 	return res.Success(number)
 }
 
-func VisitStringNode(node nodes.StringNode, ctx environment.Context) *RuntimeResult {
+func VisitStringNode(node nodes.StringNode, ctx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	str := &values.String{Value: node.Tok.Value.(string)}
@@ -178,7 +178,7 @@ func VisitStringNode(node nodes.StringNode, ctx environment.Context) *RuntimeRes
 	return res.Success(str)
 }
 
-func VisitListNode(node nodes.ListNode, ctx environment.Context) *RuntimeResult {
+func VisitListNode(node nodes.ListNode, ctx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 	elements := make([]values.BaseValueInterface, 0, len(node.ElementNodes))
 
@@ -195,7 +195,7 @@ func VisitListNode(node nodes.ListNode, ctx environment.Context) *RuntimeResult 
 	return res.Success(list)
 }
 
-func VisitStatementsNode(node nodes.StatementsNode, ctx environment.Context) *RuntimeResult {
+func VisitStatementsNode(node nodes.StatementsNode, ctx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 	var lastStatementValue values.BaseValueInterface = &values.Null{}
 
@@ -212,7 +212,7 @@ func VisitStatementsNode(node nodes.StatementsNode, ctx environment.Context) *Ru
 	return res.Success(lastStatementValue)
 }
 
-func VisitVariableAccessNode(node nodes.VariableAccessNode, ctx environment.Context) *RuntimeResult {
+func VisitVariableAccessNode(node nodes.VariableAccessNode, ctx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 	posRange := node.GetPosRange()
 
@@ -231,7 +231,7 @@ func VisitVariableAccessNode(node nodes.VariableAccessNode, ctx environment.Cont
 	return res.Success(value)
 }
 
-func VisitVariableAssignNode(node nodes.VariableAssignNode, ctx environment.Context) *RuntimeResult {
+func VisitVariableAssignNode(node nodes.VariableAssignNode, ctx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 	varName := node.VarNameTok.Value.(string)
 
@@ -251,7 +251,7 @@ func VisitVariableAssignNode(node nodes.VariableAssignNode, ctx environment.Cont
 	return res.Success(value)
 }
 
-func VisitVariableReassignNode(node nodes.VariableReassignNode, ctx environment.Context) *RuntimeResult {
+func VisitVariableReassignNode(node nodes.VariableReassignNode, ctx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 	varName := node.VarNameTok.Value.(string)
 	value := res.Register(Visit(node.ValueNode, ctx))
@@ -267,7 +267,7 @@ func VisitVariableReassignNode(node nodes.VariableReassignNode, ctx environment.
 	return res.Success(value)
 }
 
-func VisitVariableDeleteNode(node nodes.VariableDeleteNode, ctx environment.Context) *RuntimeResult {
+func VisitVariableDeleteNode(node nodes.VariableDeleteNode, ctx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 	posRange := node.GetPosRange()
 
@@ -287,7 +287,7 @@ func VisitVariableDeleteNode(node nodes.VariableDeleteNode, ctx environment.Cont
 	return res.Success(value)
 }
 
-func VisitBinOpNode(node nodes.BinOpNode, ctx environment.Context) *RuntimeResult {
+func VisitBinOpNode(node nodes.BinOpNode, ctx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	left := res.Register(Visit(node.LeftNode, ctx))
@@ -339,7 +339,7 @@ func VisitBinOpNode(node nodes.BinOpNode, ctx environment.Context) *RuntimeResul
 	return res.Success(result)
 }
 
-func VisitUnaryOpNode(node nodes.UnaryOpNode, ctx environment.Context) *RuntimeResult {
+func VisitUnaryOpNode(node nodes.UnaryOpNode, ctx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	number := res.Register(Visit(node.NodeValue, ctx))
@@ -364,7 +364,7 @@ func VisitUnaryOpNode(node nodes.UnaryOpNode, ctx environment.Context) *RuntimeR
 	return res.Success(number)
 }
 
-func VisitIfNode(node nodes.IfNode, ctx environment.Context) *RuntimeResult {
+func VisitIfNode(node nodes.IfNode, ctx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	for i := 0; i < len(node.Cases); i++ {
@@ -399,7 +399,7 @@ returnNull:
 	return res.Success(&values.Null{})
 }
 
-func VisitForNode(node nodes.ForNode, ctx environment.Context) *RuntimeResult {
+func VisitForNode(node nodes.ForNode, ctx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 	var elements []values.BaseValueInterface
 
@@ -477,7 +477,7 @@ func VisitForNode(node nodes.ForNode, ctx environment.Context) *RuntimeResult {
 	return res.Success(result)
 }
 
-func VisitWhileNode(node nodes.WhileNode, ctx environment.Context) *RuntimeResult {
+func VisitWhileNode(node nodes.WhileNode, ctx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 	var elements []values.BaseValueInterface
 
@@ -514,7 +514,7 @@ func VisitWhileNode(node nodes.WhileNode, ctx environment.Context) *RuntimeResul
 	return res.Success(result)
 }
 
-func VisitFuncDefNode(node nodes.FuncDefNode, ctx environment.Context) *RuntimeResult {
+func VisitFuncDefNode(node nodes.FuncDefNode, ctx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	var funcName *string = nil
@@ -539,7 +539,7 @@ func VisitFuncDefNode(node nodes.FuncDefNode, ctx environment.Context) *RuntimeR
 	return res.Success(funcValue)
 }
 
-func VisitCallNode(node nodes.CallNode, ctx environment.Context) *RuntimeResult {
+func VisitCallNode(node nodes.CallNode, ctx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	valueToCall := res.Register(Visit(node.NodeToCall, ctx))
@@ -565,7 +565,7 @@ func VisitCallNode(node nodes.CallNode, ctx environment.Context) *RuntimeResult 
 	return res.Success(returnValue)
 }
 
-func VisitItemAccessNode(node nodes.ItemAccessNode, ctx environment.Context) *RuntimeResult {
+func VisitItemAccessNode(node nodes.ItemAccessNode, ctx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	valueToAccess := res.Register(Visit(node.NodeToAccess, ctx))
@@ -587,7 +587,7 @@ func VisitItemAccessNode(node nodes.ItemAccessNode, ctx environment.Context) *Ru
 	return res.Success(result)
 }
 
-func VisitItemAssignNode(node nodes.ItemAssignNode, ctx environment.Context) *RuntimeResult {
+func VisitItemAssignNode(node nodes.ItemAssignNode, ctx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	valueToAssignTo := res.Register(Visit(node.NodeToAssignTo, ctx))
@@ -613,7 +613,7 @@ func VisitItemAssignNode(node nodes.ItemAssignNode, ctx environment.Context) *Ru
 	return res.Success(result)
 }
 
-func VisitItemDeleteNode(node nodes.ItemDeleteNode, ctx environment.Context) *RuntimeResult {
+func VisitItemDeleteNode(node nodes.ItemDeleteNode, ctx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	valueToAccess := res.Register(Visit(node.NodeToAccess, ctx))
@@ -635,7 +635,7 @@ func VisitItemDeleteNode(node nodes.ItemDeleteNode, ctx environment.Context) *Ru
 	return res.Success(result)
 }
 
-func VisitReturnNode(node nodes.ReturnNode, ctx environment.Context) *RuntimeResult {
+func VisitReturnNode(node nodes.ReturnNode, ctx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	var value values.BaseValueInterface = &values.Null{}
@@ -648,15 +648,15 @@ func VisitReturnNode(node nodes.ReturnNode, ctx environment.Context) *RuntimeRes
 	return res.SuccessReturn(value)
 }
 
-func VisitContinueNode(node nodes.ContinueNode, ctx environment.Context) *RuntimeResult {
+func VisitContinueNode(node nodes.ContinueNode, ctx *environment.Context) *RuntimeResult {
 	return NewRuntimeResult().SuccessContinue()
 }
 
-func VisitBreakNode(node nodes.BreakNode, ctx environment.Context) *RuntimeResult {
+func VisitBreakNode(node nodes.BreakNode, ctx *environment.Context) *RuntimeResult {
 	return NewRuntimeResult().SuccessBreak()
 }
 
-func VisitImportNode(node nodes.ImportNode, ctx environment.Context) *RuntimeResult {
+func VisitImportNode(node nodes.ImportNode, ctx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	modulePath := node.ModulePathTok.Value.(string)
@@ -689,7 +689,7 @@ func VisitImportNode(node nodes.ImportNode, ctx environment.Context) *RuntimeRes
 
 // *Built-in Functions
 type BuiltInFunctionData struct {
-	FunctionRef func(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult
+	FunctionRef func(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult
 	Args        []string
 }
 
@@ -764,29 +764,29 @@ var BuiltInFunctionTable = map[string]BuiltInFunctionData{
 	},
 }
 
-func ExecutePrint(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+func ExecutePrint(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult {
 	fmt.Println(execCtx.SymTable.GetSymbol("value"))
 	return NewRuntimeResult().Success(&values.Null{})
 }
 
-func ExecuteInput(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+func ExecuteInput(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult {
 	var input string
 	fmt.Scanln(&input)
 	return NewRuntimeResult().Success(&values.String{Value: input})
 }
 
-func ExecuteClear(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+func ExecuteClear(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult {
 	screen.Clear()
 	screen.MoveTopLeft()
 	return NewRuntimeResult().Success(&values.Null{})
 }
 
-func ExecuteTypeOf(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+func ExecuteTypeOf(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult {
 	value := execCtx.SymTable.GetSymbol("value")
 	return NewRuntimeResult().Success(&values.String{Value: reflect.TypeOf(value).Elem().Name()})
 }
 
-func ExecuteLen(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+func ExecuteLen(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	value := execCtx.SymTable.GetSymbol("list").(values.BaseValueInterface)
@@ -799,7 +799,7 @@ func ExecuteLen(callable values.BaseFunctionInterface, execCtx environment.Conte
 	return res.Success(length)
 }
 
-func ExecuteAppend(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+func ExecuteAppend(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	list := execCtx.SymTable.GetSymbol("list").(values.BaseValueInterface)
@@ -817,7 +817,7 @@ func ExecuteAppend(callable values.BaseFunctionInterface, execCtx environment.Co
 	return res.Success(&values.Null{})
 }
 
-func ExecutePop(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+func ExecutePop(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 	// posRange := callable.GetPosRange()
 
@@ -842,7 +842,7 @@ func ExecutePop(callable values.BaseFunctionInterface, execCtx environment.Conte
 	return res.Success(element)
 }
 
-func ExecuteExtend(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+func ExecuteExtend(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 	// posRange := callable.GetPosRange()
 
@@ -864,7 +864,7 @@ func ExecuteExtend(callable values.BaseFunctionInterface, execCtx environment.Co
 	return res.Success(&values.Null{})
 }
 
-func ExecuteExit(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+func ExecuteExit(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	codeValue := execCtx.SymTable.GetSymbol("code").(values.BaseValueInterface)
@@ -879,7 +879,7 @@ func ExecuteExit(callable values.BaseFunctionInterface, execCtx environment.Cont
 	return res.Success(&values.Null{}) // won't matter anyways
 }
 
-func ExecuteFileOpen(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+func ExecuteFileOpen(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	pathValue := execCtx.SymTable.GetSymbol("path").(values.BaseValueInterface)
@@ -934,7 +934,7 @@ func ExecuteFileOpen(callable values.BaseFunctionInterface, execCtx environment.
 	return res.Success(&values.File{FileValue: f, ModeStr: mode.Value})
 }
 
-func ExecuteFileClose(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+func ExecuteFileClose(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	fileValue := execCtx.SymTable.GetSymbol("file").(values.BaseValueInterface)
@@ -951,7 +951,7 @@ func ExecuteFileClose(callable values.BaseFunctionInterface, execCtx environment
 	return res.Success(&values.Null{})
 }
 
-func ExecuteFileSeek(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+func ExecuteFileSeek(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	fileValue := execCtx.SymTable.GetSymbol("file").(values.BaseValueInterface)
@@ -981,7 +981,7 @@ func ExecuteFileSeek(callable values.BaseFunctionInterface, execCtx environment.
 	return res.Success(&values.Integer{Value: int64(newOffset)})
 }
 
-func ExecuteFileRead(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+func ExecuteFileRead(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	fileValue := execCtx.SymTable.GetSymbol("file").(values.BaseValueInterface)
@@ -1018,7 +1018,7 @@ func ExecuteFileRead(callable values.BaseFunctionInterface, execCtx environment.
 	return res.Success(&values.String{Value: string(readBuf[:noBytesRead])})
 }
 
-func ExecuteFileWrite(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+func ExecuteFileWrite(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	fileValue := execCtx.SymTable.GetSymbol("file").(values.BaseValueInterface)
@@ -1042,7 +1042,7 @@ func ExecuteFileWrite(callable values.BaseFunctionInterface, execCtx environment
 	return res.Success(&values.Integer{Value: int64(noBytesWritten)})
 }
 
-func ExecuteFileTruncate(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+func ExecuteFileTruncate(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	fileValue := execCtx.SymTable.GetSymbol("file").(values.BaseValueInterface)
@@ -1066,7 +1066,7 @@ func ExecuteFileTruncate(callable values.BaseFunctionInterface, execCtx environm
 	return res.Success(&values.Integer{Value: size.Value})
 }
 
-func ExecuteFileCreate(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+func ExecuteFileCreate(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	pathValue := execCtx.SymTable.GetSymbol("path").(values.BaseValueInterface)
@@ -1089,7 +1089,7 @@ func ExecuteFileCreate(callable values.BaseFunctionInterface, execCtx environmen
 	return res.Success(&values.File{FileValue: f, ModeStr: "r+"})
 }
 
-func ExecuteFileCreateTemp(callable values.BaseFunctionInterface, execCtx environment.Context) *RuntimeResult {
+func ExecuteFileCreateTemp(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	dirValue := execCtx.SymTable.GetSymbol("dir").(values.BaseValueInterface)
@@ -1133,7 +1133,7 @@ func CheckArgs(callable values.BaseFunctionInterface, argNames []string, args []
 	return res.Success(nil)
 }
 
-func PopulateArgs(callable values.BaseFunctionInterface, argNames []string, args []values.BaseValueInterface, execCtx environment.Context) {
+func PopulateArgs(callable values.BaseFunctionInterface, argNames []string, args []values.BaseValueInterface, execCtx *environment.Context) {
 	for i := 0; i < len(args); i++ {
 		argName := argNames[i]
 		argValue := args[i]
@@ -1142,7 +1142,7 @@ func PopulateArgs(callable values.BaseFunctionInterface, argNames []string, args
 	}
 }
 
-func CheckAndPopulateArgs(callable values.BaseFunctionInterface, argNames []string, args []values.BaseValueInterface, execCtx environment.Context) *RuntimeResult {
+func CheckAndPopulateArgs(callable values.BaseFunctionInterface, argNames []string, args []values.BaseValueInterface, execCtx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 	res.Register(CheckArgs(callable, argNames, args))
 	if res.ShouldReturn() {
@@ -1152,7 +1152,7 @@ func CheckAndPopulateArgs(callable values.BaseFunctionInterface, argNames []stri
 	return res.Success(nil)
 }
 
-func ExecuteCallable(callableValue values.BaseValueInterface, args []values.BaseValueInterface, callNode nodes.CallNode, ctx environment.Context) *RuntimeResult {
+func ExecuteCallable(callableValue values.BaseValueInterface, args []values.BaseValueInterface, callNode nodes.CallNode, ctx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
 	callable, ok := callableValue.(values.BaseFunctionInterface)

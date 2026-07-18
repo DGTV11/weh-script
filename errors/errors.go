@@ -105,10 +105,10 @@ func NewSyntaxNotImplementedError(positionStart *position.Position, positionEnd 
 
 //*Runtime errors
 
-func NewRuntimeError(positionStart *position.Position, positionEnd *position.Position, details string, ctx environment.Context) *Error {
-	return &Error{PositionStart: positionStart, PositionEnd: positionEnd, Name: "Runtime Error", Details: details, Ctx: &ctx}
+func NewRuntimeError(positionStart *position.Position, positionEnd *position.Position, details string, ctx *environment.Context) *Error {
+	return &Error{PositionStart: positionStart, PositionEnd: positionEnd, Name: "Runtime Error", Details: details, Ctx: ctx}
 }
 
-func NewNotImplementedError(positionStart *position.Position, positionEnd *position.Position, details string, ctx environment.Context) *Error {
-	return &Error{PositionStart: positionStart, PositionEnd: positionEnd, Name: "Not Implemented", Details: details, Ctx: &ctx}
+func NewNotImplementedError(positionStart *position.Position, positionEnd *position.Position, details string, ctx *environment.Context) *Error {
+	return &Error{PositionStart: positionStart, PositionEnd: positionEnd, Name: "Not Implemented", Details: details, Ctx: ctx}
 }
