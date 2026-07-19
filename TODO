@@ -1,5 +1,4 @@
 1) finish up good goods 
-  - add hex int literal in lexer
   - add type casting
 	- add structs (efficiently packed data like real structs?)
   - add OOP? https://craftinginterpreters.com/the-lox-language.html#classes
