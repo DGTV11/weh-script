@@ -1,9 +1,7 @@
 # closures test
 
 func outer(x) 
-  func inner(y)
-    return x+y
-  end
+  func inner(y) => x+y
   return inner
 end 
 
@@ -18,9 +16,7 @@ println(closure(20))
 
 func count(initial)
   var x=initial
-  func inc()
-    return nonlocal x=x+1
-  end
+  func inc() => nonlocal x=x+1
   return inc
 end
 
