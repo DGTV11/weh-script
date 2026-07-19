@@ -295,6 +295,7 @@ var EscapeChars = map[rune]rune{
 	'n': '\n',
 	't': '\t',
 	'r': '\r',
+	'b': '\b',
 }
 
 func (l *Lexer) MakeString() (*tokens.Token, *errors.Error) {
