@@ -177,9 +177,7 @@ func (l *Lexer) Tokenise() ([]tokens.Token, *errors.Error) {
 			if unicode.IsDigit(char) {
 				tokp, err := l.MakeNumberToken()
 				if err != nil {
-					positionStart := l.Position.Copy()
-					l.Advance()
-					return []tokens.Token{}, errors.NewInvalidNumberError(positionStart, &l.Position, err.Error())
+					return []tokens.Token{}, err
 				}
 				tokenList = append(tokenList, *tokp)
 
@@ -203,10 +201,30 @@ func (l *Lexer) Tokenise() ([]tokens.Token, *errors.Error) {
 	return tokenList, nil
 }
 
-func (l *Lexer) MakeNumberToken() (*tokens.Token, error) {
+func (l *Lexer) MakeNumberToken() (*tokens.Token, *errors.Error) {
 	sb := stringbuf.New("")
 	dotCount := 0
 	posStart := l.Position.Copy()
+
+	if *l.CurrentChar == '0' {
+		l.Advance()
+		if l.CurrentChar == nil {
+			sb.AppendRune('0')
+			goto parseNumber
+		}
+		switch *l.CurrentChar {
+		case 'x':
+			l.Advance()
+			return l.MakeHexadecimalNumberToken(posStart)
+		case 'o':
+			l.Advance()
+			return l.MakeOctalNumberToken(posStart)
+		case 'b':
+			l.Advance()
+			return l.MakeBinaryNumberToken(posStart)
+		}
+		sb.AppendRune('0')
+	}
 
 	for l.CurrentChar != nil {
 		char := *l.CurrentChar
@@ -234,6 +252,7 @@ func (l *Lexer) MakeNumberToken() (*tokens.Token, error) {
 		break
 	}
 
+parseNumber:
 	numStr := sb.String()
 
 	var (
@@ -251,11 +270,74 @@ func (l *Lexer) MakeNumberToken() (*tokens.Token, error) {
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, errors.NewInvalidNumberError(posStart, &l.Position, err.Error())
 	}
 
 	// return &tokens.Token{Type: _type, Value: value}, nil
 	newTok := tokens.NewToken(_type, value, posStart, &l.Position)
+	return &newTok, nil
+}
+
+func (l *Lexer) MakeHexadecimalNumberToken(posStart *position.Position) (*tokens.Token, *errors.Error) {
+	sb := stringbuf.New("")
+
+	for l.CurrentChar != nil && unicode.In(*l.CurrentChar, unicode.ASCII_Hex_Digit) {
+		sb.AppendRune(*l.CurrentChar)
+		l.Advance()
+	}
+
+	numStr := sb.String()
+
+	value, err := strconv.ParseInt(numStr, 16, 64)
+
+	if err != nil {
+		return nil, errors.NewInvalidNumberError(posStart, &l.Position, err.Error())
+	}
+
+	// return &tokens.Token{Type: _type, Value: value}, nil
+	newTok := tokens.NewToken(tokens.TokenTypeInt, value, posStart, &l.Position)
+	return &newTok, nil
+}
+
+func (l *Lexer) MakeOctalNumberToken(posStart *position.Position) (*tokens.Token, *errors.Error) {
+	sb := stringbuf.New("")
+
+	for l.CurrentChar != nil && *l.CurrentChar >= '0' && *l.CurrentChar <= '7' {
+		sb.AppendRune(*l.CurrentChar)
+		l.Advance()
+	}
+
+	numStr := sb.String()
+
+	value, err := strconv.ParseInt(numStr, 8, 64)
+
+	if err != nil {
+		return nil, errors.NewInvalidNumberError(posStart, &l.Position, err.Error())
+	}
+
+	// return &tokens.Token{Type: _type, Value: value}, nil
+	newTok := tokens.NewToken(tokens.TokenTypeInt, value, posStart, &l.Position)
+	return &newTok, nil
+}
+
+func (l *Lexer) MakeBinaryNumberToken(posStart *position.Position) (*tokens.Token, *errors.Error) {
+	sb := stringbuf.New("")
+
+	for l.CurrentChar != nil && (*l.CurrentChar == '0' || *l.CurrentChar == '1') {
+		sb.AppendRune(*l.CurrentChar)
+		l.Advance()
+	}
+
+	numStr := sb.String()
+
+	value, err := strconv.ParseInt(numStr, 2, 64)
+
+	if err != nil {
+		return nil, errors.NewInvalidNumberError(posStart, &l.Position, err.Error())
+	}
+
+	// return &tokens.Token{Type: _type, Value: value}, nil
+	newTok := tokens.NewToken(tokens.TokenTypeInt, value, posStart, &l.Position)
 	return &newTok, nil
 }
 
