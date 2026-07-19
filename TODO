@@ -5,8 +5,8 @@
     - this means u need to add get and del for member access operator `.`
   - add directory I/O
   - add go plugins for import statement
-  - add AST optimiser (or just wait until bytecode compiler)?
   - explain syntax/CLI in TODO or smth
 2) make bytecode compiler + reg-based VM (give option to choose between AST tree-walk interpreter and bytecode interpreter, especially when running .weh script)
-  - maybe (PLT-inspired) trap style stdlib?
+  - maybe traps for stdlib?
+  - defo make optimiser
 3) make language bundled thingy (which can be compiled to portable executable) or stick with .wvn ('wyvern'?) bytecode files
