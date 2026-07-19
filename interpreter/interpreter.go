@@ -731,6 +731,10 @@ var BuiltInFunctionTable = map[string]BuiltInFunctionData{
 		FunctionRef: ExecuteLen,
 		Args:        []string{"list"},
 	},
+	"hex": {
+		FunctionRef: ExecuteHex,
+		Args:        []string{"int"},
+	},
 	"append": {
 		FunctionRef: ExecuteAppend,
 		Args:        []string{"list", "value"},
@@ -843,6 +847,19 @@ func ExecuteLen(callable values.BaseFunctionInterface, execCtx *environment.Cont
 	}
 
 	return res.Success(length)
+}
+
+func ExecuteHex(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	intValue := execCtx.SymTable.GetSymbol("int").(values.BaseValueInterface)
+	int, ok := intValue.(*values.Integer)
+	if ok == false {
+		posRange := intValue.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, "First argument must be Integer", execCtx))
+	}
+
+	return NewRuntimeResult().Success(&values.String{Value: fmt.Sprintf("0x%x", int.Value)})
 }
 
 func ExecuteAppend(callable values.BaseFunctionInterface, execCtx *environment.Context) *RuntimeResult {
