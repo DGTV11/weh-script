@@ -599,7 +599,7 @@ func (self *Float) IsTrue() bool {
 }
 func (self *Float) String() string {
 	s := strconv.FormatFloat(self.Value, 'g', -1, 64)
-	if !strings.ContainsAny(s, ".eE") {
+	if !strings.ContainsAny(s, ".eEnN") {
 		s += ".0"
 	}
 	return s

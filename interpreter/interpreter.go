@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"maps"
+	"math"
 	"os"
 	"reflect"
 
@@ -26,6 +27,8 @@ func SetupGlobalSymbolTable() *environment.SymbolTable {
 	GlobalSymbolTable.SetSymbol("null", &values.Null{})
 	GlobalSymbolTable.SetSymbol("true", &values.Integer{Value: 1})
 	GlobalSymbolTable.SetSymbol("false", &values.Integer{Value: 0})
+	GlobalSymbolTable.SetSymbol("inf", &values.Float{Value: math.Inf(1)})
+	GlobalSymbolTable.SetSymbol("nan", &values.Float{Value: math.NaN()})
 
 	//*Load functions
 	for funcName := range maps.Keys(BuiltInFunctionTable) {
