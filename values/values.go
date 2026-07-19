@@ -598,7 +598,11 @@ func (self *Float) IsTrue() bool {
 	return self.Value != 0.0
 }
 func (self *Float) String() string {
-	return strconv.FormatFloat(self.Value, 'g', -1, 64)
+	s := strconv.FormatFloat(self.Value, 'g', -1, 64)
+	if !strings.ContainsAny(s, ".eE") {
+		s += ".0"
+	}
+	return s
 }
 func (self *Float) GoString() string {
 	return self.String()
