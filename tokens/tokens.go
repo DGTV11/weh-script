@@ -12,6 +12,7 @@ const (
 	TokenTypeInt TokenType = iota
 	TokenTypeFloat
 	TokenTypeString
+	TokenTypeChar
 	TokenTypeIdentifier
 	TokenTypeKeyword
 	TokenTypePlus
@@ -46,6 +47,7 @@ var TokenTypeNameMap = [...]string{
 	TokenTypeInt:        "TokenTypeInt",
 	TokenTypeFloat:      "TokenTypeFloat",
 	TokenTypeString:     "TokenTypeString",
+	TokenTypeChar:       "TokenTypeChar",
 	TokenTypeIdentifier: "TokenTypeIdentifier",
 	TokenTypeKeyword:    "TokenTypeKeyword",
 	TokenTypePlus:       "TokenTypePlus",

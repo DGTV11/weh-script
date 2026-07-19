@@ -587,6 +587,10 @@ func (p *Parser) Atom() *ParseResult {
 		res.RegisterAdvance()
 		p.Advance()
 		return res.Success(nodes.NewStringNode(tok))
+	} else if tok.Type == tokens.TokenTypeChar {
+		res.RegisterAdvance()
+		p.Advance()
+		return res.Success(nodes.NewCharNode(tok))
 	} else if tok.Type == tokens.TokenTypeIdentifier {
 		res.RegisterAdvance()
 		p.Advance()

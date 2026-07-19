@@ -53,6 +53,21 @@ func (n StringNode) String() string {
 	return fmt.Sprintf("%v", n.Tok)
 }
 
+type CharNode struct {
+	BaseNode
+	Tok tokens.Token
+}
+
+func NewCharNode(tok tokens.Token) CharNode {
+	return CharNode{
+		Tok:      tok,
+		BaseNode: BaseNode{PosRange: position.PositionRange{Start: tok.PosRange.Start, End: tok.PosRange.End}},
+	}
+}
+func (n CharNode) String() string {
+	return fmt.Sprintf("%v", n.Tok)
+}
+
 type ListNode struct {
 	BaseNode
 	ElementNodes []Node

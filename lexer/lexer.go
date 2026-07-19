@@ -75,6 +75,12 @@ func (l *Lexer) Tokenise() ([]tokens.Token, *errors.Error) {
 				return []tokens.Token{}, err
 			}
 			tokenList = append(tokenList, *tokp)
+		case '\'':
+			tokp, err := l.MakeChar()
+			if err != nil {
+				return []tokens.Token{}, err
+			}
+			tokenList = append(tokenList, *tokp)
 		case '+':
 			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypePlus, nil, &l.Position, nil))
 			l.Advance()
@@ -374,10 +380,11 @@ func (l *Lexer) MakeIdentifierOrKeywordToken() *tokens.Token {
 }
 
 var EscapeChars = map[rune]rune{
-	'n': '\n',
-	't': '\t',
-	'r': '\r',
-	'b': '\b',
+	'n':  '\n',
+	't':  '\t',
+	'r':  '\r',
+	'b':  '\b',
+	'\\': '\\',
 }
 
 func (l *Lexer) MakeString() (*tokens.Token, *errors.Error) {
@@ -435,5 +442,53 @@ func (l *Lexer) MakeString() (*tokens.Token, *errors.Error) {
 
 	l.Advance()
 	newTok := tokens.NewToken(tokens.TokenTypeString, sb.String(), posStart, &l.Position)
+	return &newTok, nil
+}
+
+func (l *Lexer) MakeChar() (*tokens.Token, *errors.Error) {
+	var char rune
+	posStart := l.Position.Copy()
+	l.Advance()
+
+	if l.CurrentChar != nil && *l.CurrentChar == '\\' {
+		l.Advance()
+		var (
+			ok bool
+		)
+		if *l.CurrentChar == 'x' {
+			hexStr := make([]rune, 2)
+			l.Advance()
+			if l.CurrentChar == nil || !unicode.In(*l.CurrentChar, unicode.ASCII_Hex_Digit) {
+				return nil, errors.NewInvalidSyntaxError(posStart, &l.Position, "Truncated \\xXX escape")
+			}
+			hexStr[0] = *l.CurrentChar
+			l.Advance()
+			if l.CurrentChar == nil || !unicode.In(*l.CurrentChar, unicode.ASCII_Hex_Digit) {
+				return nil, errors.NewInvalidSyntaxError(posStart, &l.Position, "Truncated \\xXX escape")
+			}
+			hexStr[1] = *l.CurrentChar
+			escapedHex, pErr := strconv.ParseInt(string(hexStr), 16, 16)
+			if pErr != nil {
+				return nil, errors.NewInvalidSyntaxError(posStart, &l.Position, pErr.Error())
+			}
+			char = rune(escapedHex)
+		} else {
+			char, ok = EscapeChars[*l.CurrentChar]
+			if ok == false {
+				l.Advance()
+				return nil, errors.NewInvalidSyntaxError(posStart, &l.Position, "Invalid escape sequence")
+			}
+		}
+	} else {
+		char = *l.CurrentChar
+	}
+	l.Advance()
+
+	if l.CurrentChar == nil || *l.CurrentChar != '\'' {
+		return nil, errors.NewInvalidSyntaxError(posStart, &l.Position, "Unterminated character")
+	}
+
+	l.Advance()
+	newTok := tokens.NewToken(tokens.TokenTypeChar, char, posStart, &l.Position)
 	return &newTok, nil
 }

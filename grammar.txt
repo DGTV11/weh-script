@@ -37,7 +37,7 @@ call          : atom (
               | Lsquare expr Rsquare
                 )*
               
-atom          : Int|Float|String|Identifier
+atom          : Int|Float|String|Char|Identifier
               : Lparen expr Rparen
               : list-expr
               : if-expr

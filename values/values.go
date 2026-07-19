@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/stanNthe5/stringbuf"
 
@@ -218,6 +219,9 @@ func (self *Integer) Add(other BaseValueInterface) (BaseValueInterface, *errors.
 	case *Float:
 		res = &Float{Value: float64(self.Value) + o.Value}
 		res.SetContext(self.GetContext())
+	case *Char:
+		res = &Integer{Value: self.Value + int64(o.Value)}
+		res.SetContext(self.GetContext())
 	default:
 		return nil, self.IllegalOperation(other)
 	}
@@ -231,6 +235,9 @@ func (self *Integer) Sub(other BaseValueInterface) (BaseValueInterface, *errors.
 		res = &Integer{Value: self.Value - o.Value}
 	case *Float:
 		res = &Float{Value: float64(self.Value) - o.Value}
+	case *Char:
+		res = &Integer{Value: self.Value - int64(o.Value)}
+		res.SetContext(self.GetContext())
 	default:
 		return nil, self.IllegalOperation(other)
 	}
@@ -255,6 +262,9 @@ func (self *Integer) Mul(other BaseValueInterface) (BaseValueInterface, *errors.
 			return nil, errors.NewRuntimeError(self.GetPosRange().Start, other.GetPosRange().End, "Integer length limit exceeded", self.GetContext())
 		}
 		res = &List{Elements: slices.Repeat(o.Elements, int(self.Value))}
+	case *Char:
+		res = &Integer{Value: self.Value * int64(o.Value)}
+		res.SetContext(self.GetContext())
 	default:
 		return nil, self.IllegalOperation(other)
 	}
@@ -305,6 +315,8 @@ func (self *Integer) Eq(other BaseValueInterface) (BaseValueInterface, *errors.E
 		res = &Integer{Value: Bool2int64(self.Value == o.Value)}
 	case *Float:
 		res = &Integer{Value: Bool2int64(float64(self.Value) == o.Value)}
+	case *Char:
+		res = &Integer{Value: Bool2int64(self.Value == int64(o.Value))}
 	default:
 		return nil, self.IllegalOperation(other)
 	}
@@ -319,6 +331,8 @@ func (self *Integer) Ne(other BaseValueInterface) (BaseValueInterface, *errors.E
 		res = &Integer{Value: Bool2int64(self.Value != o.Value)}
 	case *Float:
 		res = &Integer{Value: Bool2int64(float64(self.Value) != o.Value)}
+	case *Char:
+		res = &Integer{Value: Bool2int64(self.Value != int64(o.Value))}
 	default:
 		return nil, self.IllegalOperation(other)
 	}
@@ -333,6 +347,8 @@ func (self *Integer) Lt(other BaseValueInterface) (BaseValueInterface, *errors.E
 		res = &Integer{Value: Bool2int64(self.Value < o.Value)}
 	case *Float:
 		res = &Integer{Value: Bool2int64(float64(self.Value) < o.Value)}
+	case *Char:
+		res = &Integer{Value: Bool2int64(self.Value < int64(o.Value))}
 	default:
 		return nil, self.IllegalOperation(other)
 	}
@@ -347,6 +363,8 @@ func (self *Integer) Gt(other BaseValueInterface) (BaseValueInterface, *errors.E
 		res = &Integer{Value: Bool2int64(self.Value > o.Value)}
 	case *Float:
 		res = &Integer{Value: Bool2int64(float64(self.Value) > o.Value)}
+	case *Char:
+		res = &Integer{Value: Bool2int64(self.Value > int64(o.Value))}
 	default:
 		return nil, self.IllegalOperation(other)
 	}
@@ -361,6 +379,8 @@ func (self *Integer) Lte(other BaseValueInterface) (BaseValueInterface, *errors.
 		res = &Integer{Value: Bool2int64(self.Value <= o.Value)}
 	case *Float:
 		res = &Integer{Value: Bool2int64(float64(self.Value) <= o.Value)}
+	case *Char:
+		res = &Integer{Value: Bool2int64(self.Value <= int64(o.Value))}
 	default:
 		return nil, self.IllegalOperation(other)
 	}
@@ -375,6 +395,8 @@ func (self *Integer) Gte(other BaseValueInterface) (BaseValueInterface, *errors.
 		res = &Integer{Value: Bool2int64(self.Value >= o.Value)}
 	case *Float:
 		res = &Integer{Value: Bool2int64(float64(self.Value) >= o.Value)}
+	case *Char:
+		res = &Integer{Value: Bool2int64(self.Value >= int64(o.Value))}
 	default:
 		return nil, self.IllegalOperation(other)
 	}
@@ -677,6 +699,45 @@ func (self *String) LNot() (BaseValueInterface, *errors.Error) {
 	res := &Integer{Value: Bool2int64(!self.IsTrue())}
 	return res, nil
 }
+func (self *String) Length() (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: int64(utf8.RuneCountInString(self.Value))}
+	return res, nil
+}
+func (self *String) GetItem(key BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := key.(type) {
+	case *Integer:
+		rawIdx := int(o.Value)
+		runeCount := utf8.RuneCountInString(self.Value)
+		var idx int
+		if rawIdx < 0 {
+			idx = runeCount + rawIdx
+		} else {
+			idx = rawIdx
+		}
+
+		if idx >= runeCount || idx < 0 {
+			// endPos := key.GetPosRange().End
+			// x := ' '
+			// endPos.Advance(&x) //*evil hack
+			// return nil, errors.NewRuntimeError(self.GetPosRange().Start, endPos, fmt.Sprintf("Element at index %d could not be retrieved from List because index is out of bounds", rawIdx), self.GetContext())
+			return nil, errors.NewRuntimeError(self.GetPosRange().Start, key.GetPosRange().End, fmt.Sprintf("Char at index %d could not be retrieved from String because index is out of bounds", rawIdx), self.GetContext())
+		}
+		currentIdx := 0
+		for _, r := range self.Value {
+			if currentIdx == idx {
+				res = &Char{Value: r}
+				break
+			}
+			currentIdx++
+		} //O(idx) time complexity, should consider using []rune for storage instead
+	default:
+		return nil, self.IllegalOperation(key)
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
 func (self *String) Copy() BaseValueInterface {
 	copy := &String{Value: strings.Clone(self.Value)}
 	copy.SetValuePos(self.GetPosRange())
@@ -691,6 +752,166 @@ func (self *String) String() string {
 }
 func (self *String) GoString() string {
 	return strconv.Quote(self.String())
+}
+
+// *Char
+type Char struct {
+	BaseValue
+	Value rune
+}
+
+func (self *Char) Add(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Char:
+		res = &Char{Value: self.Value + o.Value}
+	case *Integer:
+		res = &Char{Value: self.Value + rune(o.Value)}
+	default:
+		return nil, self.IllegalOperation(other)
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *Char) Sub(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Char:
+		res = &Char{Value: self.Value - o.Value}
+	case *Integer:
+		res = &Char{Value: self.Value - rune(o.Value)}
+	default:
+		return nil, self.IllegalOperation(other)
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *Char) Mul(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Char:
+		res = &Char{Value: self.Value * o.Value}
+	case *Integer:
+		res = &Char{Value: self.Value * rune(o.Value)}
+	default:
+		return nil, self.IllegalOperation(other)
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *Char) Eq(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Char:
+		res = &Integer{Value: Bool2int64(self.Value == o.Value)}
+	case *Integer:
+		res = &Integer{Value: Bool2int64(int64(self.Value) == o.Value)}
+	default:
+		return nil, self.IllegalOperation(other)
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *Char) Ne(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Char:
+		res = &Integer{Value: Bool2int64(self.Value != o.Value)}
+	case *Integer:
+		res = &Integer{Value: Bool2int64(int64(self.Value) != o.Value)}
+	default:
+		return nil, self.IllegalOperation(other)
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *Char) Lt(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Char:
+		res = &Integer{Value: Bool2int64(self.Value < o.Value)}
+	case *Integer:
+		res = &Integer{Value: Bool2int64(int64(self.Value) < o.Value)}
+	default:
+		return nil, self.IllegalOperation(other)
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *Char) Gt(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Char:
+		res = &Integer{Value: Bool2int64(self.Value > o.Value)}
+	case *Integer:
+		res = &Integer{Value: Bool2int64(int64(self.Value) > o.Value)}
+	default:
+		return nil, self.IllegalOperation(other)
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *Char) Lte(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Char:
+		res = &Integer{Value: Bool2int64(self.Value <= o.Value)}
+	case *Integer:
+		res = &Integer{Value: Bool2int64(int64(self.Value) <= o.Value)}
+	default:
+		return nil, self.IllegalOperation(other)
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *Char) Gte(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Char:
+		res = &Integer{Value: Bool2int64(self.Value >= o.Value)}
+	case *Integer:
+		res = &Integer{Value: Bool2int64(int64(self.Value) >= o.Value)}
+	default:
+		return nil, self.IllegalOperation(other)
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *Char) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(self.IsTrue() && other.IsTrue())}
+	return res, nil
+}
+func (self *Char) LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(self.IsTrue() || other.IsTrue())}
+	return res, nil
+}
+func (self *Char) LNot() (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(!self.IsTrue())}
+	return res, nil
+}
+func (self *Char) Copy() BaseValueInterface {
+	copy := &Char{Value: self.Value}
+	copy.SetValuePos(self.GetPosRange())
+	copy.SetContext(self.GetContext())
+	return copy
+}
+func (self *Char) IsTrue() bool {
+	return self.Value != 0
+}
+func (self *Char) String() string {
+	return string(self.Value)
+}
+func (self *Char) GoString() string {
+	return strconv.QuoteRune(self.Value)
 }
 
 // *List

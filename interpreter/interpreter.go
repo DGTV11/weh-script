@@ -108,6 +108,8 @@ func Visit(node nodes.Node, ctx *environment.Context) *RuntimeResult {
 		return VisitNumberNode(node.(nodes.NumberNode), ctx)
 	case nodes.StringNode:
 		return VisitStringNode(node.(nodes.StringNode), ctx)
+	case nodes.CharNode:
+		return VisitCharNode(node.(nodes.CharNode), ctx)
 	case nodes.ListNode:
 		return VisitListNode(node.(nodes.ListNode), ctx)
 	case nodes.StatementsNode:
@@ -176,6 +178,15 @@ func VisitStringNode(node nodes.StringNode, ctx *environment.Context) *RuntimeRe
 	res := NewRuntimeResult()
 
 	str := &values.String{Value: node.Tok.Value.(string)}
+	str.SetContext(ctx)
+	str.SetValuePos(node.GetPosRange())
+	return res.Success(str)
+}
+
+func VisitCharNode(node nodes.CharNode, ctx *environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	str := &values.Char{Value: node.Tok.Value.(rune)}
 	str.SetContext(ctx)
 	str.SetValuePos(node.GetPosRange())
 	return res.Success(str)
@@ -265,6 +276,9 @@ func VisitVariableReassignNode(node nodes.VariableReassignNode, ctx *environment
 	stRes := ctx.SymTable.UpdateSymbol(varName, value, node.Nonlocal)
 	if stRes == false {
 		posRange := node.GetPosRange()
+		if node.Nonlocal {
+			return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, fmt.Sprintf("'%s' is not defined in parent scope", varName), ctx))
+		}
 		return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, fmt.Sprintf("'%s' is not defined", varName), ctx))
 	}
 	return res.Success(value)
