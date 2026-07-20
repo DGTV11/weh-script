@@ -788,6 +788,10 @@ var BuiltInFunctionTable = map[string]BuiltInFunctionData{
 		FunctionRef: ExecuteFileWrite,
 		Args:        []string{"file", "text"},
 	},
+	// "fprintf": {
+	// 	FunctionRef: ExecuteFilePrintf,
+	// 	Args:        []string{"file", "format", "args"},
+	// },
 	"ftruncate": {
 		FunctionRef: ExecuteFileTruncate,
 		Args:        []string{"file", "size"},
