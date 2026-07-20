@@ -44,6 +44,7 @@ atom          : Int|Float|String|Char|Identifier
               : for-expr
               : while-expr
               : func-def
+              : struct-def
               
 list-expr     : Lsquare (expr (Comma expr)*)? Rsquare
               
@@ -69,6 +70,11 @@ while-expr    : Keyword:while expr Keyword:then
               | (Newline statements Keyword:end)
               
 func-def      : Keyword:func Identifier?
+                Lparen (Identifier (Comma Identifier)*)? Rparen
+                (Arrow expr)
+              | (Newline statements Keyword:end)
+
+struct-def    : Keyword:struct Identifier?
                 Lparen (Identifier (Comma Identifier)*)? Rparen
                 (Arrow expr)
               | (Newline statements Keyword:end)
