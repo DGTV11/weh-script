@@ -643,6 +643,12 @@ func (p *Parser) Atom() *ParseResult {
 			return res
 		}
 		return res.Success(funcDef)
+	} else if tok.Matches(tokens.TokenTypeKeyword, "struct") {
+		structDef := res.Register(p.StructDef())
+		if res.Err != nil {
+			return res
+		}
+		return res.Success(structDef)
 	}
 
 	return res.Failure(
@@ -1161,6 +1167,117 @@ func (p *Parser) FuncDef() *ParseResult {
 
 	return res.Success(
 		nodes.NewFuncDefNode(varNameTok, argNameToks, body, false),
+	)
+}
+
+func (p *Parser) StructDef() *ParseResult {
+	res := NewParseResult()
+
+	if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, "struct") {
+		return res.Failure(
+			errors.NewInvalidSyntaxError(
+				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+				"Expected 'struct'",
+			),
+		)
+	}
+	res.RegisterAdvance()
+	p.Advance()
+
+	var varNameTok *tokens.Token
+	if p.CurrentToken.Type == tokens.TokenTypeIdentifier {
+		varNameTok = p.CurrentToken
+		res.RegisterAdvance()
+		p.Advance()
+		if p.CurrentToken.Type != tokens.TokenTypeNewline {
+			return res.Failure(
+				errors.NewInvalidSyntaxError(
+					p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+					"Expected Newline",
+				),
+			)
+		}
+	} else {
+		varNameTok = nil
+		if p.CurrentToken.Type != tokens.TokenTypeNewline {
+			return res.Failure(
+				errors.NewInvalidSyntaxError(
+					p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+					"Expected identifier or Newline",
+				),
+			)
+		}
+	}
+
+	res.RegisterAdvance()
+	p.Advance()
+
+	for p.CurrentToken.Type == tokens.TokenTypeNewline {
+		res.RegisterAdvance()
+		p.Advance()
+	}
+
+	if p.CurrentToken.Type != tokens.TokenTypeIdentifier {
+		return res.Failure(
+			errors.NewInvalidSyntaxError(
+				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+				"Expected identifier",
+			),
+		)
+	}
+
+	var fieldNameToks []tokens.Token
+	fieldNameToks = append(fieldNameToks, *p.CurrentToken) //TODO: any better way to do this + previous line
+
+	res.RegisterAdvance()
+	p.Advance()
+
+	for p.CurrentToken.Type == tokens.TokenTypeNewline {
+		res.RegisterAdvance()
+		p.Advance()
+	}
+
+	if p.CurrentToken.Type != tokens.TokenTypeIdentifier {
+		return res.Failure(
+			errors.NewInvalidSyntaxError(
+				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+				"Expected identifier",
+			),
+		)
+	}
+
+	for p.CurrentToken.Type == tokens.TokenTypeIdentifier {
+		fieldNameToks = append(fieldNameToks, *p.CurrentToken)
+		res.RegisterAdvance()
+		p.Advance()
+		if p.CurrentToken.Type != tokens.TokenTypeNewline {
+			return res.Failure(
+				errors.NewInvalidSyntaxError(
+					p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+					"Expected Newline",
+				),
+			)
+		}
+		for p.CurrentToken.Type == tokens.TokenTypeNewline {
+			res.RegisterAdvance()
+			p.Advance()
+		}
+	}
+
+	if !p.CurrentToken.Matches(tokens.TokenTypeKeyword, "end") {
+		return res.Failure(
+			errors.NewInvalidSyntaxError(
+				p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+				"Expected 'end'",
+			),
+		)
+	}
+
+	res.RegisterAdvance()
+	p.Advance()
+
+	return res.Success(
+		nodes.NewStructDefNode(varNameTok, fieldNameToks),
 	)
 }
 

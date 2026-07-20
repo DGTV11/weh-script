@@ -74,8 +74,7 @@ func-def      : Keyword:func Identifier?
                 (Arrow expr)
               | (Newline statements Keyword:end)
 
-struct-def    : Keyword:struct Identifier?
-                Lparen (Identifier (Comma Identifier)*)? Rparen
-                (Arrow expr)
-              | (Newline statements Keyword:end)
+struct-def    : Keyword:struct Identifier? Newline+
+                (Identifier Newline+)+
+                Keyword:end
 

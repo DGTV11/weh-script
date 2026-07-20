@@ -91,6 +91,7 @@ var Keywords = []string{
 	"step",
 	"while",
 	"func",
+	"struct",
 	"end",
 	"return",
 	"continue",

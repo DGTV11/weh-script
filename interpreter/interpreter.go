@@ -134,6 +134,8 @@ func Visit(node nodes.Node, ctx *environment.Context) *RuntimeResult {
 		return VisitWhileNode(node.(nodes.WhileNode), ctx)
 	case nodes.FuncDefNode:
 		return VisitFuncDefNode(node.(nodes.FuncDefNode), ctx)
+	case nodes.StructDefNode:
+		return VisitStructDefNode(node.(nodes.StructDefNode), ctx)
 	case nodes.CallNode:
 		return VisitCallNode(node.(nodes.CallNode), ctx)
 	case nodes.ItemAccessNode:
@@ -559,6 +561,33 @@ func VisitFuncDefNode(node nodes.FuncDefNode, ctx *environment.Context) *Runtime
 	}
 	// fmt.Println(funcValue.Closure)
 	return res.Success(funcValue)
+}
+
+func VisitStructDefNode(node nodes.StructDefNode, ctx *environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	var structName *string = nil
+	if node.VarNameTok != nil {
+		structNameStrVal := node.VarNameTok.Value.(string)
+		structName = &structNameStrVal
+	}
+
+	fieldNames := make([]string, 0, len(node.FieldNameToks))
+	for i := 0; i < len(node.FieldNameToks); i++ {
+		fieldNames = append(fieldNames, node.FieldNameToks[i].Value.(string))
+	}
+	structValue := &values.StructDefinition{FieldNames: fieldNames} //TODO
+	structValue.SetContext(ctx)
+	structValue.SetValuePos(node.GetPosRange())
+
+	if structName != nil {
+		stRes := ctx.SymTable.SetSymbol(*structName, structValue)
+		if stRes == false {
+			posRange := node.GetPosRange()
+			return res.Failure(errors.NewRuntimeError(posRange.Start, posRange.End, fmt.Sprintf("'%s' is already defined", *structName), ctx))
+		}
+	}
+	return res.Success(structValue)
 }
 
 func VisitCallNode(node nodes.CallNode, ctx *environment.Context) *RuntimeResult {

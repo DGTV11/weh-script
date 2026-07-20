@@ -321,6 +321,32 @@ func (n FuncDefNode) String() string {
 	return fmt.Sprintf("(FUNC %v ARGS %v => %v ? %t)", n.VarNameTok, n.ArgNameToks, n.BodyNode, n.ShouldAutoReturn)
 }
 
+type StructDefNode struct {
+	BaseNode
+	VarNameTok    *tokens.Token
+	FieldNameToks []tokens.Token
+}
+
+func NewStructDefNode(varNameTok *tokens.Token, fieldNameToks []tokens.Token) StructDefNode {
+	var posStart *position.Position
+
+	if varNameTok != nil {
+		posStart = varNameTok.PosRange.Start
+	} else {
+		posStart = fieldNameToks[0].PosRange.Start
+	}
+
+	return StructDefNode{
+		VarNameTok:    varNameTok,
+		FieldNameToks: fieldNameToks,
+		BaseNode:      BaseNode{PosRange: position.PositionRange{Start: posStart, End: fieldNameToks[len(fieldNameToks)-1].PosRange.End}},
+	}
+}
+
+func (n StructDefNode) String() string {
+	return fmt.Sprintf("(STRUCT %v FIELDS %v)", n.VarNameTok, n.FieldNameToks)
+}
+
 type CallNode struct {
 	BaseNode
 	NodeToCall Node
