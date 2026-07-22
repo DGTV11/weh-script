@@ -1308,7 +1308,7 @@ func ExecuteFileCreateTemp(callable values.BaseFunctionInterface, execCtx *envir
 }
 
 // *Function Calls
-func CheckArgs(callable values.BaseFunctionInterface, argNames []string, args []values.BaseValueInterface) *RuntimeResult {
+func CheckArgs(callable values.BaseCallableInterface, argNames []string, args []values.BaseValueInterface) *RuntimeResult {
 	res := NewRuntimeResult()
 	posRange := callable.GetPosRange()
 
@@ -1322,7 +1322,7 @@ func CheckArgs(callable values.BaseFunctionInterface, argNames []string, args []
 	return res.Success(nil)
 }
 
-func PopulateArgs(callable values.BaseFunctionInterface, argNames []string, args []values.BaseValueInterface, execCtx *environment.Context) {
+func PopulateArgs(callable values.BaseCallableInterface, argNames []string, args []values.BaseValueInterface, execCtx *environment.Context) {
 	for i := 0; i < len(args); i++ {
 		argName := argNames[i]
 		argValue := args[i]
@@ -1344,12 +1344,7 @@ func CheckAndPopulateArgs(callable values.BaseFunctionInterface, argNames []stri
 func ExecuteCallable(callableValue values.BaseValueInterface, args []values.BaseValueInterface, callNode nodes.CallNode, ctx *environment.Context) *RuntimeResult {
 	res := NewRuntimeResult()
 
-	callable, ok := callableValue.(values.BaseFunctionInterface)
-	if ok == false {
-		goto invalidType
-	}
-
-	switch c := callable.(type) {
+	switch c := callableValue.(type) {
 	case *values.Function:
 		execCtx := c.GenerateNewContext()
 
@@ -1389,10 +1384,20 @@ func ExecuteCallable(callableValue values.BaseValueInterface, args []values.Base
 			return res
 		}
 		return res.Success(value)
+	case *values.StructDefinition:
+		res.Register(CheckArgs(c, c.FieldNames, args))
+		if res.ShouldReturn() {
+			return res
+		}
+		fieldNameIdxMap := make(map[string]int)
+		fields := make([]values.BaseValueInterface, len(args))
+		for i := 0; i < len(args); i++ {
+			fieldNameIdxMap[c.FieldNames[i]] = i
+			fields[i] = args[i]
+		}
+		return res.Success(&values.Structure{Name: c.Name, FieldNameIdxMap: fieldNameIdxMap, Fields: fields})
 	default:
-		goto invalidType
+		nodePosRange := callNode.GetPosRange()
+		return res.Failure(errors.NewRuntimeError(nodePosRange.Start, nodePosRange.End, "Illegal operation", ctx))
 	}
-invalidType:
-	nodePosRange := callNode.GetPosRange()
-	return res.Failure(errors.NewRuntimeError(nodePosRange.Start, nodePosRange.End, "Illegal operation", ctx))
 }

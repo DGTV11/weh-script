@@ -5,5 +5,15 @@ struct test_1
   b
 end
 
-var x = test_1
-print(test_1)
+print("Definition: ")
+println(test_1)
+var x = test_1(0xdeadbeef,1337)
+print("Instance: ")
+println(x)
+print("x.a: ");println(x.a)
+print("x.b: ");println(x.b)
+print("x[0]: ");println(x[0])
+print("x[1]: ");println(x[1])
+print("len(x): ");println(len(x))
+
+#TODO: impl test w/h www.geeksforgeeks.org/dsa/how-does-floyds-slow-and-fast-pointers-approach-work/

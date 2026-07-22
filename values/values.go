@@ -72,9 +72,9 @@ type BaseValueInterface interface {
 	GetItem(key BaseValueInterface) (BaseValueInterface, *errors.Error)
 	SetItem(key BaseValueInterface, value BaseValueInterface) (BaseValueInterface, *errors.Error)
 	DelItem(key BaseValueInterface) (BaseValueInterface, *errors.Error)
-	GetMember(field string, posRange position.PositionRange) (BaseValueInterface, *errors.Error)
-	SetMember(field string, value BaseValueInterface, posRange position.PositionRange) (BaseValueInterface, *errors.Error)
-	DelMember(field string, posRange position.PositionRange) (BaseValueInterface, *errors.Error)
+	GetMember(fieldName string, posRange position.PositionRange) (BaseValueInterface, *errors.Error)
+	SetMember(fieldName string, value BaseValueInterface, posRange position.PositionRange) (BaseValueInterface, *errors.Error)
+	DelMember(fieldName string, posRange position.PositionRange) (BaseValueInterface, *errors.Error)
 	Copy() BaseValueInterface
 	IsTrue() bool
 	IllegalOperation(other BaseValueInterface) *errors.Error
@@ -156,13 +156,13 @@ func (self *BaseValue) SetItem(key BaseValueInterface, value BaseValueInterface)
 func (self *BaseValue) DelItem(key BaseValueInterface) (BaseValueInterface, *errors.Error) {
 	return nil, self.IllegalOperation(key)
 }
-func (self *BaseValue) GetMember(field string, posRange position.PositionRange) (BaseValueInterface, *errors.Error) {
+func (self *BaseValue) GetMember(fieldName string, posRange position.PositionRange) (BaseValueInterface, *errors.Error) {
 	return nil, self.IllegalOperationManualPosRange(posRange.Start, posRange.End)
 }
-func (self *BaseValue) SetMember(field string, value BaseValueInterface, posRange position.PositionRange) (BaseValueInterface, *errors.Error) {
+func (self *BaseValue) SetMember(fieldName string, value BaseValueInterface, posRange position.PositionRange) (BaseValueInterface, *errors.Error) {
 	return nil, self.IllegalOperationManualPosRange(posRange.Start, posRange.End)
 }
-func (self *BaseValue) DelMember(field string, posRange position.PositionRange) (BaseValueInterface, *errors.Error) {
+func (self *BaseValue) DelMember(fieldName string, posRange position.PositionRange) (BaseValueInterface, *errors.Error) {
 	return nil, self.IllegalOperationManualPosRange(posRange.Start, posRange.End)
 }
 func (self *BaseValue) Copy() BaseValueInterface {
@@ -1081,9 +1081,13 @@ func (self *List) GoString() string {
 }
 
 // *BaseFunction
-type BaseFunctionInterface interface {
+type BaseCallableInterface interface {
 	BaseValueInterface
 	DisplayName() string
+}
+
+type BaseFunctionInterface interface {
+	BaseCallableInterface
 	GenerateNewContext() *environment.Context
 }
 
@@ -1206,6 +1210,28 @@ type StructDefinition struct {
 	FieldNames []string
 }
 
+func (self *StructDefinition) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(self.IsTrue() && other.IsTrue())}
+	return res, nil
+}
+func (self *StructDefinition) LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(self.IsTrue() || other.IsTrue())}
+	return res, nil
+}
+func (self *StructDefinition) LNot() (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(!self.IsTrue())}
+	return res, nil
+}
+func (self *StructDefinition) Copy() BaseValueInterface {
+	copy := &StructDefinition{Name: self.Name, FieldNames: self.FieldNames}
+	copy.SetValuePos(self.GetPosRange())
+	copy.SetContext(self.GetContext())
+	return copy
+}
+func (self *StructDefinition) IsTrue() bool {
+	return true
+}
+
 func (self *StructDefinition) DisplayName() string {
 	if self.Name == nil {
 		return "<anonymous>"
@@ -1214,8 +1240,126 @@ func (self *StructDefinition) DisplayName() string {
 }
 
 func (self *StructDefinition) String() string {
-	return fmt.Sprintf("<struct definition %s>", self.DisplayName())
+	return fmt.Sprintf("<structure definition %s>", self.DisplayName())
 }
 func (self *StructDefinition) GoString() string {
 	return self.String()
+}
+
+// *Structure
+type Structure struct {
+	BaseValue
+	Name            *string
+	FieldNameIdxMap map[string]int
+	Fields          []BaseValueInterface
+}
+
+func (self *Structure) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(self.IsTrue() && other.IsTrue())}
+	return res, nil
+}
+func (self *Structure) LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(self.IsTrue() || other.IsTrue())}
+	return res, nil
+}
+func (self *Structure) LNot() (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(!self.IsTrue())}
+	return res, nil
+}
+func (self *Structure) Length() (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: int64(len(self.Fields))}
+	return res, nil
+}
+func (self *Structure) GetItem(key BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := key.(type) {
+	case *Integer:
+		rawIdx := int(o.Value)
+		var idx int
+		if rawIdx < 0 {
+			idx = len(self.Fields) + rawIdx
+		} else {
+			idx = rawIdx
+		}
+
+		if idx >= len(self.Fields) || idx < 0 {
+			// endPos := key.GetPosRange().End
+			// x := ' '
+			// endPos.Advance(&x) //*evil hack
+			// return nil, errors.NewRuntimeError(self.GetPosRange().Start, endPos, fmt.Sprintf("Element at index %d could not be retrieved from List because index is out of bounds", rawIdx), self.GetContext())
+			return nil, errors.NewRuntimeError(self.GetPosRange().Start, key.GetPosRange().End, fmt.Sprintf("Field at index %d could not be retrieved from Structure because index is out of bounds", rawIdx), self.GetContext())
+		}
+		res = self.Fields[idx]
+	default:
+		return nil, self.IllegalOperation(key)
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *Structure) SetItem(key BaseValueInterface, value BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := key.(type) {
+	case *Integer:
+		rawIdx := int(o.Value)
+		var idx int
+		if rawIdx < 0 {
+			idx = len(self.Fields) + rawIdx
+		} else {
+			idx = rawIdx
+		}
+
+		if idx >= len(self.Fields) || idx < 0 {
+			// endPos := key.GetPosRange().End
+			// x := ' '
+			// endPos.Advance(&x) //*evil hack
+			// return nil, errors.NewRuntimeError(self.GetPosRange().Start, endPos, fmt.Sprintf("Element at index %d could not be retrieved from List because index is out of bounds", rawIdx), self.GetContext())
+			return nil, errors.NewRuntimeError(self.GetPosRange().Start, key.GetPosRange().End, fmt.Sprintf("Field at index %d could not be retrieved from Structure because index is out of bounds", rawIdx), self.GetContext())
+		}
+		self.Fields[idx] = value
+		res = self.Fields[idx]
+	default:
+		return nil, self.IllegalOperation(key)
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *Structure) GetMember(fieldName string, posRange position.PositionRange) (BaseValueInterface, *errors.Error) {
+	// var res BaseValueInterface = nil
+	idx, ok := self.FieldNameIdxMap[fieldName]
+	if ok == false {
+		return nil, errors.NewRuntimeError(posRange.Start, posRange.End, fmt.Sprintf("Field '%s' does not exist within Structure", fieldName), self.GetContext())
+	}
+	return self.Fields[idx], nil
+}
+func (self *Structure) SetMember(fieldName string, value BaseValueInterface, posRange position.PositionRange) (BaseValueInterface, *errors.Error) {
+	idx, ok := self.FieldNameIdxMap[fieldName]
+	if ok == false {
+		return nil, errors.NewRuntimeError(posRange.Start, posRange.End, fmt.Sprintf("Field '%s' does not exist within Structure", fieldName), self.GetContext())
+	}
+	self.Fields[idx] = value
+	return value, nil
+}
+
+func (self *Structure) Copy() BaseValueInterface {
+	copy := &Structure{Fields: self.Fields, FieldNameIdxMap: self.FieldNameIdxMap}
+	copy.SetValuePos(self.GetPosRange())
+	copy.SetContext(self.GetContext())
+	return copy
+}
+func (self *Structure) IsTrue() bool {
+	return true
+}
+func (self *Structure) DisplayName() string {
+	if self.Name == nil {
+		return "<anonymous>"
+	}
+	return *self.Name
+}
+func (self *Structure) String() string {
+	return fmt.Sprintf("<structure %s>", self.DisplayName())
+}
+func (self *Structure) GoString() string {
+	return self.String() //TODO: full human-readable view into elements
 }

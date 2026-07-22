@@ -1,9 +1,8 @@
 1) finish up good goods 
   - add type casting
-	- add structs (efficiently packed data like real structs?)
-    - IN PROGRESS: TODO: make call node update for instantiation, make "Struct" instance struct
   - add OOP? https://craftinginterpreters.com/the-lox-language.html#classes
     - this means u need to add get and del for member access operator `.`
+  - add error handling
   - explain syntax/CLI in README or smth
 2) make bytecode compiler + reg-based VM (give option to choose between AST tree-walk interpreter and bytecode interpreter, especially when running .weh script)
   - maybe traps for stdlib?
