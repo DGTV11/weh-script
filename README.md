@@ -1,8 +1,9 @@
 # WehScript Programming Language
 
 Stupid programming language written primarily in Go
-%%TODO: update dis when adding C bytecode VM%%
 - May be template for future programming languages I design
+
+(TODO: update dis when adding C bytecode VM)
 
 Based on [YouTube tutorials](https://www.youtube.com/watch?v=Eythq9848Fg&list=PLZQftyCk7_SdoVexSmwy_tBgs7P0b97yD) by [David Callanan](https://github.com/davidcallanan)
 
