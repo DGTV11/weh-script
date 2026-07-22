@@ -313,6 +313,8 @@ func (p *Parser) Expr() *ParseResult {
 			delNode = nodes.NewVariableDeleteNode(n.VarNameTok)
 		case nodes.ItemAccessNode:
 			delNode = nodes.NewItemDeleteNode(n.NodeToAccess, n.KeyNode)
+		case nodes.MemberAccessNode:
+			delNode = nodes.NewMemberDeleteNode(n.NodeToAccess, n.FieldNameTok)
 		}
 
 		// res.RegisterAdvance()
@@ -371,6 +373,8 @@ func (p *Parser) Reassign() *ParseResult {
 		reassignNode = nodes.NewVariableReassignNode(n.VarNameTok, expr, false)
 	case nodes.ItemAccessNode:
 		reassignNode = nodes.NewItemAssignNode(n.NodeToAccess, n.KeyNode, expr)
+	case nodes.MemberAccessNode:
+		reassignNode = nodes.NewMemberAssignNode(n.NodeToAccess, n.FieldNameTok, expr)
 	}
 
 	// res.RegisterAdvance()
@@ -396,7 +400,7 @@ func (p *Parser) Reassignable() *ParseResult {
 
 	var assignableNode nodes.Node = nodes.NewVariableAccessNode(tok)
 
-	for p.CurrentToken.Type == tokens.TokenTypeLsquare {
+	for p.CurrentToken.Type == tokens.TokenTypeLsquare || p.CurrentToken.Type == tokens.TokenTypeMemberAccess {
 		switch p.CurrentToken.Type {
 		case tokens.TokenTypeLsquare:
 			res.RegisterAdvance()
@@ -423,6 +427,25 @@ func (p *Parser) Reassignable() *ParseResult {
 			p.Advance()
 
 			assignableNode = nodes.NewItemAccessNode(assignableNode, key)
+		case tokens.TokenTypeMemberAccess:
+			res.RegisterAdvance()
+			p.Advance()
+
+			if p.CurrentToken.Type != tokens.TokenTypeIdentifier {
+				return res.Failure(
+					errors.NewInvalidSyntaxError(
+						p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+						"Expected identifier",
+					),
+				)
+			}
+
+			field := *p.CurrentToken
+
+			res.RegisterAdvance()
+			p.Advance()
+
+			assignableNode = nodes.NewMemberAccessNode(assignableNode, field)
 		}
 	}
 
@@ -501,7 +524,7 @@ func (p *Parser) Call() *ParseResult {
 		return res
 	}
 
-	for p.CurrentToken.Type == tokens.TokenTypeLparen || p.CurrentToken.Type == tokens.TokenTypeLsquare {
+	for p.CurrentToken.Type == tokens.TokenTypeLparen || p.CurrentToken.Type == tokens.TokenTypeLsquare || p.CurrentToken.Type == tokens.TokenTypeMemberAccess {
 		switch p.CurrentToken.Type {
 		case tokens.TokenTypeLparen:
 			res.RegisterAdvance()
@@ -570,6 +593,25 @@ func (p *Parser) Call() *ParseResult {
 			p.Advance()
 
 			accessNode = nodes.NewItemAccessNode(accessNode, key)
+		case tokens.TokenTypeMemberAccess:
+			res.RegisterAdvance()
+			p.Advance()
+
+			if p.CurrentToken.Type != tokens.TokenTypeIdentifier {
+				return res.Failure(
+					errors.NewInvalidSyntaxError(
+						p.CurrentToken.PosRange.Start, p.CurrentToken.PosRange.End,
+						"Expected identifier",
+					),
+				)
+			}
+
+			field := *p.CurrentToken
+
+			res.RegisterAdvance()
+			p.Advance()
+
+			accessNode = nodes.NewMemberAccessNode(accessNode, field)
 		}
 	}
 	return res.Success(accessNode)

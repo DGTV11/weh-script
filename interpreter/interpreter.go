@@ -144,6 +144,12 @@ func Visit(node nodes.Node, ctx *environment.Context) *RuntimeResult {
 		return VisitItemAssignNode(node.(nodes.ItemAssignNode), ctx)
 	case nodes.ItemDeleteNode:
 		return VisitItemDeleteNode(node.(nodes.ItemDeleteNode), ctx)
+	case nodes.MemberAccessNode:
+		return VisitMemberAccessNode(node.(nodes.MemberAccessNode), ctx)
+	case nodes.MemberAssignNode:
+		return VisitMemberAssignNode(node.(nodes.MemberAssignNode), ctx)
+	case nodes.MemberDeleteNode:
+		return VisitMemberDeleteNode(node.(nodes.MemberDeleteNode), ctx)
 	case nodes.ReturnNode:
 		return VisitReturnNode(node.(nodes.ReturnNode), ctx)
 	case nodes.ContinueNode:
@@ -544,8 +550,14 @@ func VisitFuncDefNode(node nodes.FuncDefNode, ctx *environment.Context) *Runtime
 
 	bodyNode := node.BodyNode
 	argNames := make([]string, 0, len(node.ArgNameToks))
+	keys := make(map[string]bool)
 	for i := 0; i < len(node.ArgNameToks); i++ {
-		argNames = append(argNames, node.ArgNameToks[i].Value.(string))
+		argName := node.ArgNameToks[i].Value.(string)
+		if _, duplicatePresent := keys[argName]; duplicatePresent {
+			return res.Failure(errors.NewRuntimeError(node.ArgNameToks[i].PosRange.Start, node.ArgNameToks[i].PosRange.End, fmt.Sprintf("Duplicate arg name '%s'", argName), ctx))
+		}
+		argNames = append(argNames, argName)
+		keys[argName] = true
 	}
 	// funcValue := values.NewFunction(funcName, bodyNode, argNames)
 	funcValue := &values.Function{BodyNode: bodyNode, ArgNames: argNames, ShouldAutoReturn: node.ShouldAutoReturn, BaseFunction: values.BaseFunction{Name: funcName, Closure: ctx.SymTable}}
@@ -573,10 +585,16 @@ func VisitStructDefNode(node nodes.StructDefNode, ctx *environment.Context) *Run
 	}
 
 	fieldNames := make([]string, 0, len(node.FieldNameToks))
+	keys := make(map[string]bool)
 	for i := 0; i < len(node.FieldNameToks); i++ {
-		fieldNames = append(fieldNames, node.FieldNameToks[i].Value.(string))
+		fieldName := node.FieldNameToks[i].Value.(string)
+		if _, duplicatePresent := keys[fieldName]; duplicatePresent {
+			return res.Failure(errors.NewRuntimeError(node.FieldNameToks[i].PosRange.Start, node.FieldNameToks[i].PosRange.End, fmt.Sprintf("Duplicate field name '%s'", fieldName), ctx))
+		}
+		fieldNames = append(fieldNames, fieldName)
+		keys[fieldName] = true
 	}
-	structValue := &values.StructDefinition{FieldNames: fieldNames} //TODO
+	structValue := &values.StructDefinition{Name: structName, FieldNames: fieldNames}
 	structValue.SetContext(ctx)
 	structValue.SetValuePos(node.GetPosRange())
 
@@ -677,6 +695,64 @@ func VisitItemDeleteNode(node nodes.ItemDeleteNode, ctx *environment.Context) *R
 	}
 
 	result, error := valueToAccess.DelItem(key)
+
+	if error != nil {
+		return res.Failure(error)
+	}
+	result.SetContext(ctx)
+	result.SetValuePos(node.GetPosRange())
+	return res.Success(result)
+}
+
+func VisitMemberAccessNode(node nodes.MemberAccessNode, ctx *environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	valueToAccess := res.Register(Visit(node.NodeToAccess, ctx))
+	if res.ShouldReturn() {
+		return res
+	}
+
+	result, error := valueToAccess.GetMember(node.FieldNameTok.Value.(string), node.GetPosRange())
+
+	if error != nil {
+		return res.Failure(error)
+	}
+	result.SetContext(ctx)
+	result.SetValuePos(node.GetPosRange())
+	return res.Success(result)
+}
+
+func VisitMemberAssignNode(node nodes.MemberAssignNode, ctx *environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	valueToAssignTo := res.Register(Visit(node.NodeToAssignTo, ctx))
+	if res.ShouldReturn() {
+		return res
+	}
+	value := res.Register(Visit(node.ValueNode, ctx))
+	if res.ShouldReturn() {
+		return res
+	}
+
+	result, error := valueToAssignTo.SetMember(node.FieldNameTok.Value.(string), value, node.GetPosRange())
+
+	if error != nil {
+		return res.Failure(error)
+	}
+	result.SetContext(ctx)
+	result.SetValuePos(node.GetPosRange())
+	return res.Success(result)
+}
+
+func VisitMemberDeleteNode(node nodes.MemberDeleteNode, ctx *environment.Context) *RuntimeResult {
+	res := NewRuntimeResult()
+
+	valueToAccess := res.Register(Visit(node.NodeToAccess, ctx))
+	if res.ShouldReturn() {
+		return res
+	}
+
+	result, error := valueToAccess.DelMember(node.FieldNameTok.Value.(string), node.GetPosRange())
 
 	if error != nil {
 		return res.Failure(error)

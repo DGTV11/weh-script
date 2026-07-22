@@ -179,6 +179,9 @@ func (l *Lexer) Tokenise() ([]tokens.Token, *errors.Error) {
 		case ',':
 			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeComma, nil, &l.Position, nil))
 			l.Advance()
+		case '.':
+			tokenList = append(tokenList, tokens.NewToken(tokens.TokenTypeMemberAccess, nil, &l.Position, nil))
+			l.Advance()
 		default:
 			if unicode.IsDigit(char) {
 				tokp, err := l.MakeNumberToken()

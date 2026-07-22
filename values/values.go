@@ -72,9 +72,9 @@ type BaseValueInterface interface {
 	GetItem(key BaseValueInterface) (BaseValueInterface, *errors.Error)
 	SetItem(key BaseValueInterface, value BaseValueInterface) (BaseValueInterface, *errors.Error)
 	DelItem(key BaseValueInterface) (BaseValueInterface, *errors.Error)
-	GetAttr(key BaseValueInterface) (BaseValueInterface, *errors.Error)
-	SetAttr(key BaseValueInterface, value BaseValueInterface) (BaseValueInterface, *errors.Error)
-	DelAttr(key BaseValueInterface) (BaseValueInterface, *errors.Error)
+	GetMember(field string, posRange position.PositionRange) (BaseValueInterface, *errors.Error)
+	SetMember(field string, value BaseValueInterface, posRange position.PositionRange) (BaseValueInterface, *errors.Error)
+	DelMember(field string, posRange position.PositionRange) (BaseValueInterface, *errors.Error)
 	Copy() BaseValueInterface
 	IsTrue() bool
 	IllegalOperation(other BaseValueInterface) *errors.Error
@@ -156,14 +156,14 @@ func (self *BaseValue) SetItem(key BaseValueInterface, value BaseValueInterface)
 func (self *BaseValue) DelItem(key BaseValueInterface) (BaseValueInterface, *errors.Error) {
 	return nil, self.IllegalOperation(key)
 }
-func (self *BaseValue) GetAttr(key BaseValueInterface) (BaseValueInterface, *errors.Error) {
-	return nil, self.IllegalOperation(key)
+func (self *BaseValue) GetMember(field string, posRange position.PositionRange) (BaseValueInterface, *errors.Error) {
+	return nil, self.IllegalOperationManualPosRange(posRange.Start, posRange.End)
 }
-func (self *BaseValue) SetAttr(key BaseValueInterface, value BaseValueInterface) (BaseValueInterface, *errors.Error) {
-	return nil, self.IllegalOperation(key)
+func (self *BaseValue) SetMember(field string, value BaseValueInterface, posRange position.PositionRange) (BaseValueInterface, *errors.Error) {
+	return nil, self.IllegalOperationManualPosRange(posRange.Start, posRange.End)
 }
-func (self *BaseValue) DelAttr(key BaseValueInterface) (BaseValueInterface, *errors.Error) {
-	return nil, self.IllegalOperation(key)
+func (self *BaseValue) DelMember(field string, posRange position.PositionRange) (BaseValueInterface, *errors.Error) {
+	return nil, self.IllegalOperationManualPosRange(posRange.Start, posRange.End)
 }
 func (self *BaseValue) Copy() BaseValueInterface {
 	log.Fatal("No Copy method defined")
@@ -182,7 +182,11 @@ func (self *BaseValue) IllegalOperation(other BaseValueInterface) *errors.Error 
 		otherPosRange = other.GetPosRange()
 	}
 
-	return errors.NewRuntimeError(self.GetPosRange().Start, otherPosRange.End, "Illegal operation", self.GetContext())
+	return self.IllegalOperationManualPosRange(self.GetPosRange().Start, otherPosRange.End)
+}
+
+func (self *BaseValue) IllegalOperationManualPosRange(posStart *position.Position, posEnd *position.Position) *errors.Error {
+	return errors.NewRuntimeError(posStart, posEnd, "Illegal operation", self.GetContext())
 }
 
 // *Null
@@ -1192,5 +1196,26 @@ func (self *File) String() string {
 	return fmt.Sprintf("<file path=%s mode=%s>", strconv.Quote(self.FileValue.Name()), strconv.Quote(self.ModeStr))
 }
 func (self *File) GoString() string {
+	return self.String()
+}
+
+// *StructDefinition
+type StructDefinition struct {
+	BaseValue
+	Name       *string
+	FieldNames []string
+}
+
+func (self *StructDefinition) DisplayName() string {
+	if self.Name == nil {
+		return "<anonymous>"
+	}
+	return *self.Name
+}
+
+func (self *StructDefinition) String() string {
+	return fmt.Sprintf("<struct definition %s>", self.DisplayName())
+}
+func (self *StructDefinition) GoString() string {
 	return self.String()
 }

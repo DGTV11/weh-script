@@ -425,7 +425,62 @@ func NewItemDeleteNode(nodeToAccess Node, keyNode Node) ItemDeleteNode {
 	}
 }
 func (n ItemDeleteNode) String() string {
-	return fmt.Sprintf("(DELETE %v KEY %v)", n.NodeToAccess, n.KeyNode)
+	return fmt.Sprintf("(ITEM DELETE %v KEY %v)", n.NodeToAccess, n.KeyNode)
+}
+
+type MemberAccessNode struct {
+	BaseNode
+	NodeToAccess Node
+	FieldNameTok tokens.Token
+}
+
+func NewMemberAccessNode(nodeToAccess Node, fieldNameTok tokens.Token) MemberAccessNode {
+	return MemberAccessNode{
+		NodeToAccess: nodeToAccess,
+		FieldNameTok: fieldNameTok,
+		BaseNode:     BaseNode{PosRange: position.PositionRange{Start: nodeToAccess.GetPosRange().Start, End: fieldNameTok.PosRange.End}},
+	}
+}
+
+func (n MemberAccessNode) String() string {
+	return fmt.Sprintf("(MEMBER ACCESS %v FIELD %v)", n.NodeToAccess, n.FieldNameTok)
+}
+
+type MemberAssignNode struct {
+	BaseNode
+	NodeToAssignTo Node
+	FieldNameTok   tokens.Token
+	ValueNode      Node
+}
+
+func NewMemberAssignNode(nodeToAssignTo Node, fieldNameTok tokens.Token, valueNode Node) MemberAssignNode {
+	return MemberAssignNode{
+		NodeToAssignTo: nodeToAssignTo,
+		FieldNameTok:   fieldNameTok,
+		ValueNode:      valueNode,
+		BaseNode:       BaseNode{PosRange: position.PositionRange{Start: nodeToAssignTo.GetPosRange().Start, End: fieldNameTok.PosRange.End}},
+	}
+}
+
+func (n MemberAssignNode) String() string {
+	return fmt.Sprintf("(MEMBER ASSIGN %v FIELD %v = %v)", n.NodeToAssignTo, n.FieldNameTok, n.ValueNode)
+}
+
+type MemberDeleteNode struct {
+	BaseNode
+	NodeToAccess Node
+	FieldNameTok tokens.Token
+}
+
+func NewMemberDeleteNode(nodeToAccess Node, fieldNameTok tokens.Token) MemberDeleteNode {
+	return MemberDeleteNode{
+		NodeToAccess: nodeToAccess,
+		FieldNameTok: fieldNameTok,
+		BaseNode:     BaseNode{PosRange: position.PositionRange{Start: nodeToAccess.GetPosRange().Start, End: fieldNameTok.PosRange.End}},
+	}
+}
+func (n MemberDeleteNode) String() string {
+	return fmt.Sprintf("(MEMBER DELETE %v KEY %v)", n.NodeToAccess, n.FieldNameTok)
 }
 
 type ReturnNode struct {

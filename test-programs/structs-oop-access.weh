@@ -1,0 +1,9 @@
+# structs, OOP and access test
+
+struct test_1 
+  a
+  b
+end
+
+var x = test_1
+print(test_1)

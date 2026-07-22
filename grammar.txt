@@ -14,7 +14,10 @@ expr          : Keyword:var Identifier (Equals expr)?
 
 reassign      : reassignable Equals expr
               
-reassignable  : Identifier (Lsquare expr Rsquare)*
+reassignable  : Identifier (
+                Lsquare expr Rsquare
+              | MemberAccess Identifier
+                )*
               
 lor-expr      : and-expr ((LOr) and-expr)*
               
@@ -35,6 +38,7 @@ power         : call ((Pow) factor)*
 call          : atom (
                 Lparen (expr (Comma expr)*)? Rparen
               | Lsquare expr Rsquare
+              | MemberAccess Identifier
                 )*
               
 atom          : Int|Float|String|Char|Identifier
