@@ -11,6 +11,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/google/uuid"
 	"github.com/stanNthe5/stringbuf"
 
 	"github.com/DGTV11/weh-script/environment"
@@ -1225,22 +1226,33 @@ func (self *BaseFunction) GenerateNewContext() *environment.Context {
 // *Function
 type Function struct {
 	BaseFunction
+	ID               uuid.UUID
 	BodyNode         nodes.Node
 	ArgNames         []string
 	ShouldAutoReturn bool
-} //TODO: make hash for comparison
+}
 
 func (self *Function) Eq(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
 	var res BaseValueInterface = nil
 
-	res = &Integer{Value: Bool2int64(false)}
+	switch o := other.(type) {
+	case *Function:
+		res = &Integer{Value: Bool2int64(self.Name == o.Name && self.ID == o.ID)}
+	default:
+		res = &Integer{Value: Bool2int64(false)}
+	}
 	res.SetContext(self.GetContext())
 	return res, nil
 }
 func (self *Function) Ne(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
 	var res BaseValueInterface = nil
 
-	res = &Integer{Value: Bool2int64(true)}
+	switch o := other.(type) {
+	case *Function:
+		res = &Integer{Value: Bool2int64(self.Name != o.Name || self.ID != o.ID)}
+	default:
+		res = &Integer{Value: Bool2int64(true)}
+	}
 	res.SetContext(self.GetContext())
 	return res, nil
 }
@@ -1347,7 +1359,7 @@ func (self *File) Ne(other BaseValueInterface) (BaseValueInterface, *errors.Erro
 
 	switch o := other.(type) {
 	case *File:
-		res = &Integer{Value: Bool2int64(!(self.FileValue == o.FileValue && self.ModeStr == o.ModeStr))}
+		res = &Integer{Value: Bool2int64(self.FileValue != o.FileValue || self.ModeStr != o.ModeStr)}
 	default:
 		res = &Integer{Value: Bool2int64(true)}
 	}

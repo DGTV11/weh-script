@@ -1,5 +1,7 @@
 github.com/PLWagner/golang-liner v0.0.0-20150326205248-e089fc8db893 h1:L9KobWQB5IBhkZ9Mnhj3Xf8mKwIyTMuBRmK9CZp0n/g=
 github.com/PLWagner/golang-liner v0.0.0-20150326205248-e089fc8db893/go.mod h1:bV1JZ0nWtPzMvBa9kqXLDsmlloZ8DsMQAZ0aUbu26Oc=
+github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
+github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/inancgumus/screen v0.0.0-20190314163918-06e984b86ed3 h1:fO9A67/izFYFYky7l1pDP5Dr0BTCRkaQJUG6Jm5ehsk=
 github.com/inancgumus/screen v0.0.0-20190314163918-06e984b86ed3/go.mod h1:Ey4uAp+LvIl+s5jRbOHLcZpUDnkjLBROl15fZLwPlTM=
 github.com/spf13/pflag v1.0.10 h1:4EBh2KAYBwaONj6b2Ye1GiHfwjqyROoF4RwYO+vPwFk=

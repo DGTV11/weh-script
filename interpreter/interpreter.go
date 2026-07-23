@@ -8,6 +8,7 @@ import (
 	"os"
 	"reflect"
 
+	"github.com/google/uuid"
 	"github.com/inancgumus/screen"
 
 	"github.com/DGTV11/weh-script/environment"
@@ -560,7 +561,7 @@ func VisitFuncDefNode(node nodes.FuncDefNode, ctx *environment.Context) *Runtime
 		keys[argName] = true
 	}
 	// funcValue := values.NewFunction(funcName, bodyNode, argNames)
-	funcValue := &values.Function{BodyNode: bodyNode, ArgNames: argNames, ShouldAutoReturn: node.ShouldAutoReturn, BaseFunction: values.BaseFunction{Name: funcName, Closure: ctx.SymTable}}
+	funcValue := &values.Function{ID: uuid.New(), BodyNode: bodyNode, ArgNames: argNames, ShouldAutoReturn: node.ShouldAutoReturn, BaseFunction: values.BaseFunction{Name: funcName, Closure: ctx.SymTable}}
 	funcValue.SetContext(ctx)
 	funcValue.SetValuePos(node.GetPosRange())
 
