@@ -3,17 +3,37 @@
 struct test_1 
   a
   b
+  c
+  d
 end
 
 print("Definition: ")
 println(test_1)
-var x = test_1(0xdeadbeef,1337)
+var x = test_1(0xdeadbeef,1337, [1,2,3,4,5,6,7,8], "abcd")
 print("Instance: ")
 println(x)
+
 print("x.a: ");println(x.a)
 print("x.b: ");println(x.b)
+print("x.c: ");println(x.c)
+print("x.d: ");println(x.d)
+
 print("x[0]: ");println(x[0])
 print("x[1]: ");println(x[1])
+print("x[2]: ");println(x[2])
+print("x[3]: ");println(x[3])
 print("len(x): ");println(len(x))
+
+struct test_2
+  b
+  c
+  d
+  e
+end
+
+print("test_1 == test_2: ");println(test_1 == test_2)
+print("test_1 == test_1: ");println(test_1 == test_1)
+print("test_1(1,2,3) == test_1(1,2,3): ");println(test_1(1,2,3,4) == test_1(1,2,3,4))
+print("test_1(1,2,'1') == test_1(1,2,3): ");println(test_1(1,2,'1',4) == test_1(1,2,3,4))
 
 #TODO: impl test w/h www.geeksforgeeks.org/dsa/how-does-floyds-slow-and-fast-pointers-approach-work/
