@@ -1395,7 +1395,7 @@ func ExecuteCallable(callableValue values.BaseValueInterface, args []values.Base
 			fieldNameIdxMap[c.FieldNames[i]] = i
 			fields[i] = args[i]
 		}
-		return res.Success(&values.Structure{Name: c.Name, FieldNameIdxMap: fieldNameIdxMap, Fields: fields})
+		return res.Success(&values.Structure{Name: c.Name, FieldNameIdxMap: fieldNameIdxMap, FieldNames: c.FieldNames, Fields: fields})
 	default:
 		nodePosRange := callNode.GetPosRange()
 		return res.Failure(errors.NewRuntimeError(nodePosRange.Start, nodePosRange.End, "Illegal operation", ctx))

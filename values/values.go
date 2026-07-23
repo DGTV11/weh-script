@@ -1251,6 +1251,7 @@ type Structure struct {
 	BaseValue
 	Name            *string
 	FieldNameIdxMap map[string]int
+	FieldNames      []string
 	Fields          []BaseValueInterface
 }
 
@@ -1343,7 +1344,7 @@ func (self *Structure) SetMember(fieldName string, value BaseValueInterface, pos
 }
 
 func (self *Structure) Copy() BaseValueInterface {
-	copy := &Structure{Fields: self.Fields, FieldNameIdxMap: self.FieldNameIdxMap}
+	copy := &Structure{Fields: self.Fields, FieldNames: self.FieldNames, FieldNameIdxMap: self.FieldNameIdxMap}
 	copy.SetValuePos(self.GetPosRange())
 	copy.SetContext(self.GetContext())
 	return copy
@@ -1358,8 +1359,18 @@ func (self *Structure) DisplayName() string {
 	return *self.Name
 }
 func (self *Structure) String() string {
-	return fmt.Sprintf("<structure %s>", self.DisplayName())
+	sb := stringbuf.New(fmt.Sprintf("<structure %s ", self.DisplayName()))
+	lastIdx := len(self.Fields) - 1
+	for i := 0; i < lastIdx; i++ {
+		sb.Append(self.FieldNames[i], ":", self.Fields[i].String(), ", ")
+	}
+	if lastIdx > 0 {
+		sb.Append(self.FieldNames[lastIdx], ":", self.Fields[lastIdx].String())
+	}
+	sb.Append(">")
+
+	return sb.String()
 }
 func (self *Structure) GoString() string {
-	return self.String() //TODO: full human-readable view into elements
+	return fmt.Sprintf("<structure %s>", self.DisplayName())
 }
