@@ -1,6 +1,7 @@
 package values
 
 import (
+	goErrors "errors"
 	"fmt"
 	"log"
 	"math"
@@ -47,6 +48,49 @@ func Bool2int64(b bool) int64 {
 	}
 	return i
 } //https://dev.to/chigbeef_77/bool-int-but-stupid-in-go-3jb3
+
+func goSliceEq(x []any, y []any) bool {
+	if len(x) != len(y) {
+		return false
+	}
+
+	for i := 0; i < len(x); i++ {
+		if x[i] != y[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func goStrSliceEq(x []string, y []string) bool {
+	if len(x) != len(y) {
+		return false
+	}
+
+	for i := 0; i < len(x); i++ {
+		if x[i] != y[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func wehSliceEq(x []BaseValueInterface, y []BaseValueInterface) (bool, *errors.Error) {
+	if len(x) != len(y) {
+		return false, nil
+	}
+
+	for i := 0; i < len(x); i++ {
+		isEq, err := x[i].Eq(y[i])
+		if err != nil {
+			return false, err
+		}
+		if !isEq.IsTrue() {
+			return false, nil
+		}
+	}
+	return true, nil
+}
 
 // *BaseValue and interface
 type BaseValueInterface interface {
@@ -194,6 +238,42 @@ type Null struct {
 	BaseValue
 }
 
+func (self *Null) Eq(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch other.(type) {
+	case *Null:
+		res = &Integer{Value: Bool2int64(true)}
+	default:
+		res = &Integer{Value: Bool2int64(false)}
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *Null) Ne(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch other.(type) {
+	case *Null:
+		res = &Integer{Value: Bool2int64(false)}
+	default:
+		res = &Integer{Value: Bool2int64(true)}
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *Null) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(self.IsTrue() && other.IsTrue())}
+	return res, nil
+}
+func (self *Null) LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(self.IsTrue() || other.IsTrue())}
+	return res, nil
+}
+func (self *Null) LNot() (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(!self.IsTrue())}
+	return res, nil
+}
 func (self *Null) Copy() BaseValueInterface {
 	return self
 }
@@ -322,7 +402,7 @@ func (self *Integer) Eq(other BaseValueInterface) (BaseValueInterface, *errors.E
 	case *Char:
 		res = &Integer{Value: Bool2int64(self.Value == int64(o.Value))}
 	default:
-		return nil, self.IllegalOperation(other)
+		res = &Integer{Value: Bool2int64(false)}
 	}
 	res.SetContext(self.GetContext())
 	return res, nil
@@ -338,7 +418,7 @@ func (self *Integer) Ne(other BaseValueInterface) (BaseValueInterface, *errors.E
 	case *Char:
 		res = &Integer{Value: Bool2int64(self.Value != int64(o.Value))}
 	default:
-		return nil, self.IllegalOperation(other)
+		res = &Integer{Value: Bool2int64(true)}
 	}
 	res.SetContext(self.GetContext())
 	return res, nil
@@ -527,7 +607,7 @@ func (self *Float) Eq(other BaseValueInterface) (BaseValueInterface, *errors.Err
 	case *Integer:
 		res = &Integer{Value: Bool2int64(self.Value == float64(o.Value))}
 	default:
-		return nil, self.IllegalOperation(other)
+		res = &Integer{Value: Bool2int64(false)}
 	}
 	res.SetContext(self.GetContext())
 	return res, nil
@@ -541,7 +621,7 @@ func (self *Float) Ne(other BaseValueInterface) (BaseValueInterface, *errors.Err
 	case *Integer:
 		res = &Integer{Value: Bool2int64(self.Value != float64(o.Value))}
 	default:
-		return nil, self.IllegalOperation(other)
+		res = &Integer{Value: Bool2int64(true)}
 	}
 	res.SetContext(self.GetContext())
 	return res, nil
@@ -674,7 +754,7 @@ func (self *String) Eq(other BaseValueInterface) (BaseValueInterface, *errors.Er
 	case *String:
 		res = &Integer{Value: Bool2int64(self.Value == o.Value)}
 	default:
-		return nil, self.IllegalOperation(other)
+		res = &Integer{Value: Bool2int64(false)}
 	}
 	res.SetContext(self.GetContext())
 	return res, nil
@@ -686,7 +766,7 @@ func (self *String) Ne(other BaseValueInterface) (BaseValueInterface, *errors.Er
 	case *String:
 		res = &Integer{Value: Bool2int64(self.Value != o.Value)}
 	default:
-		return nil, self.IllegalOperation(other)
+		res = &Integer{Value: Bool2int64(true)}
 	}
 	res.SetContext(self.GetContext())
 	return res, nil
@@ -815,7 +895,7 @@ func (self *Char) Eq(other BaseValueInterface) (BaseValueInterface, *errors.Erro
 	case *Integer:
 		res = &Integer{Value: Bool2int64(int64(self.Value) == o.Value)}
 	default:
-		return nil, self.IllegalOperation(other)
+		res = &Integer{Value: Bool2int64(false)}
 	}
 	res.SetContext(self.GetContext())
 	return res, nil
@@ -829,7 +909,7 @@ func (self *Char) Ne(other BaseValueInterface) (BaseValueInterface, *errors.Erro
 	case *Integer:
 		res = &Integer{Value: Bool2int64(int64(self.Value) != o.Value)}
 	default:
-		return nil, self.IllegalOperation(other)
+		res = &Integer{Value: Bool2int64(true)}
 	}
 	res.SetContext(self.GetContext())
 	return res, nil
@@ -948,6 +1028,40 @@ func (self *List) Mul(other BaseValueInterface) (BaseValueInterface, *errors.Err
 		res = &List{Elements: slices.Repeat(self.Elements, int(o.Value))}
 	default:
 		return nil, self.IllegalOperation(other)
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *List) Eq(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *List:
+		isEq, err := wehSliceEq(self.Elements, o.Elements)
+		if err != nil {
+			return nil, err
+		}
+
+		res = &Integer{Value: Bool2int64(isEq)}
+	default:
+		res = &Integer{Value: Bool2int64(false)}
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *List) Ne(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *List:
+		isEq, err := wehSliceEq(self.Elements, o.Elements)
+		if err != nil {
+			return nil, err
+		}
+
+		res = &Integer{Value: Bool2int64(!isEq)}
+	default:
+		res = &Integer{Value: Bool2int64(true)}
 	}
 	res.SetContext(self.GetContext())
 	return res, nil
@@ -1114,8 +1228,22 @@ type Function struct {
 	BodyNode         nodes.Node
 	ArgNames         []string
 	ShouldAutoReturn bool
-}
+} //TODO: make hash for comparison
 
+func (self *Function) Eq(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	res = &Integer{Value: Bool2int64(false)}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *Function) Ne(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	res = &Integer{Value: Bool2int64(true)}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
 func (self *Function) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
 	res := &Integer{Value: Bool2int64(self.IsTrue() && other.IsTrue())}
 	return res, nil
@@ -1146,6 +1274,30 @@ type BuiltInFunction struct {
 	BaseFunction
 }
 
+func (self *BuiltInFunction) Eq(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *BuiltInFunction:
+		res = &Integer{Value: Bool2int64(self.Name == o.Name)}
+	default:
+		res = &Integer{Value: Bool2int64(false)}
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *BuiltInFunction) Ne(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *BuiltInFunction:
+		res = &Integer{Value: Bool2int64(self.Name != o.Name)}
+	default:
+		res = &Integer{Value: Bool2int64(true)}
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
 func (self *BuiltInFunction) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
 	res := &Integer{Value: Bool2int64(self.IsTrue() && other.IsTrue())}
 	return res, nil
@@ -1178,6 +1330,42 @@ type File struct {
 	ModeStr   string
 }
 
+func (self *File) Eq(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *File:
+		res = &Integer{Value: Bool2int64(self.FileValue == o.FileValue && self.ModeStr == o.ModeStr)}
+	default:
+		res = &Integer{Value: Bool2int64(false)}
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *File) Ne(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *File:
+		res = &Integer{Value: Bool2int64(!(self.FileValue == o.FileValue && self.ModeStr == o.ModeStr))}
+	default:
+		res = &Integer{Value: Bool2int64(true)}
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *File) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(self.IsTrue() && other.IsTrue())}
+	return res, nil
+}
+func (self *File) LOr(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(self.IsTrue() || other.IsTrue())}
+	return res, nil
+}
+func (self *File) LNot() (BaseValueInterface, *errors.Error) {
+	res := &Integer{Value: Bool2int64(!self.IsTrue())}
+	return res, nil
+}
 func (self *File) Length() (BaseValueInterface, *errors.Error) {
 	fInfo, sErr := self.FileValue.Stat()
 	if sErr != nil {
@@ -1194,7 +1382,11 @@ func (self *File) Copy() BaseValueInterface {
 	return copy
 }
 func (self *File) IsTrue() bool {
-	return true
+	if self.FileValue == nil {
+		return false
+	}
+	_, err := self.FileValue.Read([]byte{})
+	return !goErrors.Is(err, os.ErrClosed)
 }
 func (self *File) String() string {
 	return fmt.Sprintf("<file path=%s mode=%s>", strconv.Quote(self.FileValue.Name()), strconv.Quote(self.ModeStr))
@@ -1210,6 +1402,30 @@ type StructDefinition struct {
 	FieldNames []string
 }
 
+func (self *StructDefinition) Eq(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *StructDefinition:
+		res = &Integer{Value: Bool2int64(self.Name == o.Name && goStrSliceEq(self.FieldNames, o.FieldNames))}
+	default:
+		res = &Integer{Value: Bool2int64(false)}
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *StructDefinition) Ne(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *StructDefinition:
+		res = &Integer{Value: Bool2int64(self.Name != o.Name || !goStrSliceEq(self.FieldNames, o.FieldNames))}
+	default:
+		res = &Integer{Value: Bool2int64(true)}
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
 func (self *StructDefinition) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
 	res := &Integer{Value: Bool2int64(self.IsTrue() && other.IsTrue())}
 	return res, nil
@@ -1255,6 +1471,40 @@ type Structure struct {
 	Fields          []BaseValueInterface
 }
 
+func (self *Structure) Eq(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Structure:
+		fieldsAreEq, err := wehSliceEq(self.Fields, o.Fields)
+		if err != nil {
+			return nil, err
+		}
+
+		res = &Integer{Value: Bool2int64(self.Name == o.Name && goStrSliceEq(self.FieldNames, o.FieldNames) && fieldsAreEq)}
+	default:
+		res = &Integer{Value: Bool2int64(false)}
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
+func (self *Structure) Ne(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
+	var res BaseValueInterface = nil
+
+	switch o := other.(type) {
+	case *Structure:
+		fieldsAreEq, err := wehSliceEq(self.Fields, o.Fields)
+		if err != nil {
+			return nil, err
+		}
+
+		res = &Integer{Value: Bool2int64(self.Name != o.Name || !goStrSliceEq(self.FieldNames, o.FieldNames) || !fieldsAreEq)}
+	default:
+		res = &Integer{Value: Bool2int64(true)}
+	}
+	res.SetContext(self.GetContext())
+	return res, nil
+}
 func (self *Structure) LAnd(other BaseValueInterface) (BaseValueInterface, *errors.Error) {
 	res := &Integer{Value: Bool2int64(self.IsTrue() && other.IsTrue())}
 	return res, nil
